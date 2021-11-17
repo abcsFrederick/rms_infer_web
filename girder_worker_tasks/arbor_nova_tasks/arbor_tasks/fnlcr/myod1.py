@@ -78,7 +78,24 @@ def myod1(self,image_file, segment_image_file,**kwargs):
     os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     DEVICE = 'cuda'
     print('perform forward inferencing')
-    predict_values = start_inferencing(image_file,segment_image_file)
+
+    # set the UI to 0% progress initially. stdout is parsed by the ui
+    print(f'progress: {0}')
+
+    # find and run all models in the models directory. Return the average value of the models
+    # as the final result
+    resultArray = []
+    models = glob.glob('./models/myod1*')
+    totalFolds = len(models)
+    for fold,model in enumerate(models):
+        print('**** running with model',model)
+        print('****')  
+        predict_values = start_inferencing(image_file,segment_image_file,model,fold,totalFolds)
+        resultArray.append(predict_values)
+    print('completed all folds')
+
+    # find the average of the model results
+    predict_values = sum(resultArray) / len(resultArray)
 
     # new output of classification statistics in a string
     statistics = generateStatsString(predict_values)
@@ -191,16 +208,16 @@ class Classifier(nn.Module):
 
 
 
-def start_inferencing(image_file,segmentation_mask):
+def start_inferencing(image_file,segmentation_mask,modelFilePath,foldCount,totalFolds):
     reset_seed(1)
     args = parse()
     torch.backends.cudnn.benchmark = True
 
-    # Three different networks ensembled for the full model.  For testing purposes,
-    # we initialize just the first fold here and run inferencing once.  To ensemble, a 
-    # loop would be added below to loop through all models for this algorithm in the models
-    # directory (e.g. ./models/myod*)
-    weight_path = './models/myod1_fold_01_model.pth.tar'
+    # Multiple different networks could be ensembled for the full model.   To ensemble, a 
+    # loop would be added above this call to loop through all models and combine results
+
+    #weight_path = './models/myod1_fold_01_model.pth.tar'
+    weight_path = modelFilePath
 
     ## Model instantiation and load model weight.
     ## Currently, my default setup is using 4 GPUs and batch size is 400
@@ -213,11 +230,11 @@ def start_inferencing(image_file,segmentation_mask):
     print('Loading model is finished!!!!!!!')
 
     ## inference test svs image and calculate area under the curve
-    prediction = test_auc_svs(model, image_file, segmentation_mask, args)
+    prediction = test_auc_svs(model, image_file, segmentation_mask, foldCount,totalFolds,args)
     return prediction
 
 
-def test_auc_svs(model, inference_input, segment_input, args):
+def test_auc_svs(model, inference_input, segment_input, foldCount, totalFolds,args):
     model.eval()
 
     ml = nn.Softmax(dim=1)
@@ -273,8 +290,9 @@ def test_auc_svs(model, inference_input, segment_input, args):
         iteration_count = 10
         report_interval = 1
         report_count = 0
-        # report current state 
-        percent_complete = 0
+        # report current state
+        # start with the fold count expression because this might be called multiple times
+        percent_complete = 100 * foldCount / totalFolds
 
         ## If the Level 0 objective is 40.0
         if objective==40.0:
@@ -357,7 +375,7 @@ def test_auc_svs(model, inference_input, segment_input, args):
                 # out right after it is printed 
                 report_count += 1
                 if (report_count > report_interval):
-                    percent_complete += REPORTING_INTERVAL
+                    percent_complete += (REPORTING_INTERVAL / totalFolds)
                     print(f'progress: {percent_complete}')
                     sys.stdout.flush()
                     report_count = 0
@@ -458,7 +476,7 @@ def test_auc_svs(model, inference_input, segment_input, args):
                 # out right after it is printed 
                 report_count += 1
                 if (report_count > report_interval):
-                    percent_complete += REPORTING_INTERVAL
+                    percent_complete += (REPORTING_INTERVAL / totalFolds)
                     print(f'progress: {percent_complete}')
                     sys.stdout.flush()
                     report_count = 0
