@@ -28,7 +28,7 @@
             >
           </v-flex>
           <v-flex xs12>
-            <v-btn class="text-none" outline block @click='$refs.segmentFile.click()'>{{ segmentFileName || 'UPLOAD Segmentation Mask' }}</v-btn>
+            <v-btn class="text-none" outline block @click='$refs.segmentFile.click()'>{{ segmentFileName || '(optional) UPLOAD Segmentation Mask' }}</v-btn>
             <input
               type="file"
               style="display: none"
@@ -118,7 +118,13 @@
         </div>
 
         <div v-show="runCompleted">
+          <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
+              Below is a chart comparing the MYOD1 mutation level predicted in the tested image when 
+              compared to the images in our training cohort.  Click the elipsis icon at the top right 
+              to save a copy of the chart to your local system.
+          </div>
           <v-card  align="center" justify="center" class="mt-20 mb-4 ml-4 mr-4">
+            
             <div id="visM" ref="visModel" class="mt-20 mb-4 ml-4 mr-4"></div>
           </v-card>
 
@@ -173,7 +179,7 @@ export default {
     inputImageUrl: '',
     segmentImageUrl: '',
     inputDisplayed:  false,
-    segmentDisplayed:  false,
+    segmentDisplayed: false,
     outputDisplayed:  false,
     table: [],
     osd_viewer: [],
@@ -187,7 +193,7 @@ export default {
   },
   computed: {
     readyToRun() {
-      return !!(this.imageFileName && this.segmentFileName); 
+      return !!(this.imageFileName ); 
     },
     readyToDownload() {
       return (this.runCompleted)
@@ -288,6 +294,14 @@ export default {
       this.running = true;
       this.errorLog = null;
 
+      // if there was no segmentation file uploaded, then run segmentation on demand
+      if (this.segmentFileName.length == 0) {
+        console.log('running segmentation since none was uploaded')
+        const result = await this.generateSegmentation()
+        console.log('segmentation received')
+      } 
+
+
       // create a spot in Girder for the output of the REST call to be placed
       const outputItem = (await this.girderRest.post(
         `item?folderId=${this.scratchFolder._id}&name=result`,
@@ -314,12 +328,20 @@ export default {
         this.result = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'text'})).data;
         this.runCompleted = true;
         this.stats = this.result
+        console.log('stats:',this.stats)
 
         // copy this data to a state variable for rendering in a table
         this.data = [this.stats]
         this.data.columns = ['Positive Score']
         // render by updating the this.table model
         this.table = this.data
+
+        // compare the result to the threshold
+        if (parseFloat(this.stats['Positive Score'])> 0.02) {
+          console.log('MYOD1+')
+        } else {
+          console.log('MYOD1-')
+        }
 
       }
 
@@ -451,8 +473,7 @@ export default {
       }
     },
 
-
-  
+ 
 
     async uploadSegmentationFile(file) {
       if (file) {
@@ -471,6 +492,50 @@ export default {
         this.renderSegmentImage();
       }
     },
+
+    // this routine is called when the user indicates they want to run the analysis, but there is no
+    // segmentation file specifically loaded.  In this case, run the segmentation model and upload the result
+    // to the UI
+
+    async generateSegmentation() {
+        this.runCompleted = false;
+        this.segmentUploadInProgress = true;
+
+        // create a spot in Girder for the output of the REST call to be placed
+        const outputItem = (await this.girderRest.post(
+          `item?folderId=${this.scratchFolder._id}&name=result`,
+        )).data
+
+        // create a spot in Girder for the output of the REST call to be placed
+        const statsItem = (await this.girderRest.post(
+          `item?folderId=${this.scratchFolder._id}&name=stats`,
+        )).data
+
+        // build the params to be passed into the REST call
+        const params = optionsToParameters({
+          imageId: this.imageFile._id,
+          outputId: outputItem._id,
+          statsId: statsItem._id
+        });
+        // start the job by passing parameters to the REST call
+        this.job = (await this.girderRest.post(
+          `arbor_nova/infer_wsi?${params}`,
+        )).data;
+
+        // wait for the job to finish
+        await pollUntilJobComplete(this.girderRest, this.job, this.updateJobStatus);
+
+
+        // display the uploaded image on the webpage
+        this.segmentUploadInProgress = false;
+	      console.log('calculated segmentation image...');
+        this.segmentFile = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
+
+        this.readyToDisplaySegmentation = true;
+        this.renderSegmentImage();
+        return this.segmentFile
+    },
+
 
     // loading a sample image means loading the WSI and a corresponding segmentation.  Both of these are done
     // here.  This requires girder to be pre-loaded with image names that match the patterns here. 

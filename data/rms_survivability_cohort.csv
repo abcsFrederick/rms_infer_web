@@ -1,4 +1,4 @@
-Cohort,Patient ID,Correlative Sample,Cleaned Histology,Grouping FP or FN,Risk Group (this study),Event Free Survival,Overall Survival,Censored (OS),Censored (EFS),EFS_GT,OS_GT,A.I. Risk Group: Ensemble 20 validation networks,Hazard Prediction (-1.0 ~ 1.0),Hazard Prediction (0.0 ~ 1.0)
+Cohort,Patient ID,Correlative Sample,Cleaned Histology,Grouping FP or FN,Risk Group,Event Free Survival,Overall Survival,Censored (OS),Censored (EFS),EFS_GT,OS_GT,A.I. Risk Group: Ensemble 20 validation networks,Hazard Prediction,Hazard Prediction (0 to 1)
 COG,RMS2252,PAVHUU,EMBRYONAL RHABDOMYOSARCOMA,FN,Intermediate,39,356,1,1,3,3,3,0.993870660662651,0.996935330331326
 COG,RMS2209,PAPYLE,EMBRYONAL RHABDOMYOSARCOMA,FN,High,43,1351,0,1,3,3,1,-0.800670877099037,0.099664561450482
 COG,RMS2158,PASIVM,EMBRYONAL RHABDOMYOSARCOMA,FN,High,45,247,1,1,3,3,2,-0.0143440682441,0.49282796587795

@@ -72,6 +72,10 @@
 		been pre-trained to segment rhabdomyosarcoma tissue subtypes in H&E stained   
 		whole slide images.  Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.
               <br><br>
+    To run successfully, this application requires a host system with 32GB or larger of system RAM and an NVIDIA 
+     GPU with 12GB or larger GPU memory size.  This application may fail to complete if the host 
+    system has lower specifications. 
+              <br><br>
 		After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Go" button to begin execution.  Execution may take up to several minutes,
 		depending on the size of the input image being provided.  When the analysis is complete, the resulting segmentation
 		will be displayed below and will be available for downloading, using the download button.  If you would like to segment additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
@@ -98,7 +102,11 @@
             <v-progress-linear indeterminate=True></v-progress-linear>
         </v-card>
         <v-card v-if="running && job.status == 2" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-            Running the Segmentation Neural Network.  Please wait for the output image to show below. This will take several minutes. 
+            Running the Segmentation Neural Network.  Please wait for the output image to show below. 
+            This will take several minutes. If the progress bar starts to move, but then stops further advancing for a few
+            minutes, the segmentation has failed and this has likely been caused by insufficient GPU or system 
+            memory capacities on your testing computer.  Please refresh the browser and try again 
+            with a smaller image. 
           <v-progress-linear :value="progress"></v-progress-linear>
         </v-card>
 
@@ -118,6 +126,14 @@
           </v-card>
 
           <v-card  align="center" justify="center" class="mt-20 mb-4 ml-4 mr-4">
+
+            <v-card-text>
+              <b>Below is a chart showing the percentages of ARMS, ERMS, Stroma, and Necrosis in the WSI as predicted
+            by our segmentation algorithm.  Click the elipsis icon at the top right to save a copy of the chart
+            to your local system
+              <br>
+            </v-card-text>
+
              <div id="visM" ref="visModel" class="mt-20 mb-4 ml-4 mr-4"></div>
           </v-card>
 

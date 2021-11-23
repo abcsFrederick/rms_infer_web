@@ -182,6 +182,7 @@ export default {
     osd_viewer: [],
     cohortData: [],
     progress: "0",
+    stats: {},
   }),
   asyncComputed: {
     scratchFolder() {
@@ -292,6 +293,7 @@ export default {
         this.running = false;
         this.runCompleted = true;
         this.stats = this.result.stats
+        console.log('stats:',this.stats)
         
         // now fetch the cohort that we need to compare against from girder storage.  This way the cohort
         // can be updated by changing the girder contents instead of hard-coding the web app.
@@ -328,13 +330,17 @@ export default {
             "width": 500,
             "data": {
               "values": this.cohortData },
-            "layer": [
+         "layer": [
                 {
                   "mark": {
                     "type": "point",
                     "filled": false
                   },
                   "encoding": {
+                    "color": {
+                        "field": "type",
+                        "type": "ordinal"
+                    },
                     "x": {
                       "field": "Event Free Survival",
                       "type": "quantitative"
@@ -346,32 +352,10 @@ export default {
                   }
                 },
                 {
-                  "mark": {
-                    "type": "line",
-                    "color": "firebrick"
-                  },
-                  "transform": [
-                    {
-                      "regression": "Event Free Survival",
-                      "on": "Hazard Prediction"
-                    }
-                  ],
-                  "encoding": {
-                    "x": {
-                      "field": "Event Free Survival",
-                      "type": "quantitative"
-                    },
-                    "y": {
-                      "field": "Hazard Prediction",
-                      "type": "quantitative"
-                    }
-                  }
-                }, 
-                {
                     "mark": "rule",
                     "data": {
                       "values": [
-                        {"Category": "Uploaded Image", "Prediction": this.result.stats['secondBest']}
+                        {"Category": "Uploaded Image", "Prediction": 0.45}
                       ]
                     },
                     "encoding": {
@@ -379,34 +363,11 @@ export default {
                         "field": "Prediction",
                         "type": "quantitative"
                       },
-                      "color": {"value": "orange"},
+                      "color": {"value": "firebrick"},
                       "size": {"value": 4}
                     }
-                  },
-                  {
-                    "mark": {
-                        "type":"text",
-                        "fontSize": 14,
-                        "dx": 65
-                        },
-                    "data": {
-                      "values": [
-                        {"Category": "Uploaded Image", "Prediction": this.result.stats['secondBest']}
-                      ]
-                    },
-                    "encoding": {
-                      "text": {"field":"secondBest","type":"quantitative"},
-                      "x": {
-                        "field": "Prediction",
-                        "type": "quantitative"
-                      },
-                      "y": {
-                          "field": "Category",
-                          "type": "ordinal"
-                          },
-                      "color": {"value": "orange"}
-                    }
                   }
+ 
               ]
           };
         // render the chart with options to save as PNG or SVG, but other options turned off
@@ -515,6 +476,7 @@ async uploadSegmentationFile(file) {
           this.imageFile = this.fileId
           this.inputDisplayed == false;
           this.renderInputImage();
+          this.uploadInProgress = false;
 
           // now get the segmentation image to match the WSI
           this.segmentUploadInProgress = true
