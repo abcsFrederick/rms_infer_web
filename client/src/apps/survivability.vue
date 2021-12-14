@@ -110,7 +110,7 @@
         </div>
         <div v-if="running" xs12 class="text-xs-center mb-4 ml-4 mr-4">
      Running Survivability Neural network inferencing.  Please wait for the output to show below.  This will take several minutes.
-          <v-progress-linear :value="progress"></v-progress-linear>
+          <v-progress-linear :value="surviveProgress"></v-progress-linear>
         </div>
         <div v-if="runCompleted" xs12 class="text-xs-center mb-4 ml-4 mr-4">
           Analysis Complete  ... 
@@ -167,6 +167,7 @@ export default {
     running: false,
     thumbnail: [],
     result: [],
+    segmentResult: [],
     resultColumns: [],
     resultString:  '',
     runCompleted: false,
@@ -181,7 +182,8 @@ export default {
     outputDisplayed:  false,
     osd_viewer: [],
     cohortData: [],
-    progress: "0",
+    segmentProgress: "0",
+    surviveProgress: "0",
     stats: {},
   }),
   asyncComputed: {
@@ -268,13 +270,25 @@ export default {
       this.running = true;
       this.errorLog = null;
 
-      // create a spot in Girder for the output of the REST call to be placed
+      // there may be a case where the user uploaded only a target image and not a corresponding segmentation.
+      // if this is the case, then fire off the segmentation algorithm on demand and then load the resulting 
+      // segmentation into the web page to prepare for the survivability model execution. 
+
+      if (this.segmentFileName.length == 0) {
+        // we don't have a segmentation file yet, we need to generate one
+        console.log('generating segmentation.  please wait.')
+        await this.generateSegmentation()
+      }
+
+      // create a spot in Girder for the output of the survivability REST call to be placed
       console.log('do I need this output item???')
       const outputItem = (await this.girderRest.post(
         `item?folderId=${this.scratchFolder._id}&name=result`,
       )).data
 
-      // build the params to be passed into the REST call. This is a var instead of const, because it is reused
+      // build the params to be passed into the REST call. This is a var instead of const, because it is reused.  We 
+      // aren't returning a girder item, we only return a dictionary of statistics, so there is no result hook here. 
+
       var params = optionsToParameters({
         imageFileName: this.imageFileName,
         imageId: this.imageFile._id,
@@ -289,11 +303,15 @@ export default {
       )).data;
 
       if (this.result.status === "success") {
-        // set this variable to display the resulting output image on the webpage 
+        // the survivability model ran successfully, so capture the hazard prediction value that came back
+        // from the model and parse so we can draw a rendering chart on the web page showing how the image
+        // compared with our previous cohort
+
         this.running = false;
         this.runCompleted = true;
         this.stats = this.result.stats
         console.log('stats:',this.stats)
+        this.stats = JSON.parse(this.stats)
         
         // now fetch the cohort that we need to compare against from girder storage.  This way the cohort
         // can be updated by changing the girder contents instead of hard-coding the web app.
@@ -309,66 +327,100 @@ export default {
           outnameId: cohortItem._id,
         });
         console.log('params:',params)
-        // start the job by passing parameters to the REST call
+        // start the job by passing parameters to the REST call.  This job will return 
+        // a table of cohort values for the 'survivability' cohort.
         this.job = (await this.girderRest.post(
           `arbor_nova/cohort?${params}`,
         )).data;
 
-        // wait for the job to finish
+        // wait for the job to finish and then download the cohort table
         await pollUntilJobComplete(this.girderRest, this.job, job => this.job = job);
         this.cohortData = csvParse((await this.girderRest.get(`item/${cohortItem._id}/download`)).data);
-        console.log('returned cohort',this.cohortData)
+        //console.log('returned cohort',this.cohortData)
 
-        // render the image statistics below the image
+        // write the prediction to the web console 
+        console.log('prediction', this.stats, this.stats.secondBest)
+
+        // the data needs to be stored in a local variable to render using vegaEmbed
+        let secondBest = this.stats.secondBest
+        let myCohortData = this.cohortData
+
+        // add this image result as an "Uploaded" type
+        //myCohortData.push({'Patient ID':'Uploaded','Risk Group': 'Uploaded','Event Free Survival': "50",'Hazard Prediction': secondBest.toString()})
+        //console.log('amended cohort',myCohortData)
+        //console.log('amended cohort as string:',JSON.stringify(myCohortData))
 
         // build the spec here.  Inside the method means that the data item will be available.  This spec is a boxplot of the cohort
-        // of data with a vertical line superimposed over the calculation for this particular image. 
+        // of data with a vertical line superimposed with the value of the analysis for this particular image. 
 
         var vegaLiteSpec = {
             "title": "Predicted Survivability of the Uploaded Image Compared to Our Cohort",
             "height":250,
             "width": 500,
             "data": {
-              "values": this.cohortData },
-         "layer": [
-                {
-                  "mark": {
-                    "type": "point",
-                    "filled": false
+              "values": myCohortData },
+            "layer": [
+            {
+              "mark": "boxplot",
+              "encoding": {
+                "x": {
+                  "field": "Hazard Prediction",
+                  "type": "quantitative",
+                  "scale": {"zero": true}
+                },
+                "y": {
+                  "field": "Risk Group",
+                  "type": "nominal"
+                },
+                "size": {"value":40},
+                "color": {
+                  "field": "Risk Group",
+                  "type":"nominal",
+                  "scale": {"domain":["High","Intermediate","Low","Uploaded"],"range": ["red","green","blue","orange"]}
+                }
+                }
+              }, 
+              {
+                  "mark": "rule",
+                  "data": {
+                    "values": [
+                      {"Risk Group": "Uploaded", "Hazard Prediction": secondBest,  "Event Free Survival":"50"}
+                    ]
                   },
                   "encoding": {
-                    "color": {
-                        "field": "type",
-                        "type": "ordinal"
-                    },
                     "x": {
-                      "field": "Event Free Survival",
-                      "type": "quantitative"
-                    },
-                    "y": {
                       "field": "Hazard Prediction",
                       "type": "quantitative"
-                    }
+                    },
+                    "color": {"value": "orange"},
+                    "size": {"value": 4}
                   }
                 },
                 {
-                    "mark": "rule",
-                    "data": {
-                      "values": [
-                        {"Category": "Uploaded Image", "Prediction": 0.45}
-                      ]
-                    },
-                    "encoding": {
-                      "y": {
-                        "field": "Prediction",
-                        "type": "quantitative"
+                  "mark": {
+                      "type":"text",
+                      "fontSize": 14,
+                      "dx": -25
                       },
-                      "color": {"value": "firebrick"},
-                      "size": {"value": 4}
-                    }
+                  "data": {
+                    "values": [
+                      {"Risk Group": "Uploaded", "Hazard Prediction": secondBest, "Event Free Survival":"50"}
+                    ]
+                  },
+                  "encoding": {
+                    "text": {"field":"Hazard Prediction","type":"quantitative"},
+                    "x": {
+                      "field": "Hazard Prediction",
+                      "type": "quantitative"
+                    },
+                    "y": {
+                        "field": "Risk Group",
+                        "type": "ordinal"
+                        },
+                    "color": {"value": "orange"}
                   }
- 
-              ]
+                }
+            ]
           };
         // render the chart with options to save as PNG or SVG, but other options turned off
         vegaEmbed(this.$refs.visModel,vegaLiteSpec,
@@ -415,13 +467,39 @@ async uploadSegmentationFile(file) {
     // segmentation file specifically loaded.  In this case, run the segmentation model and upload the result
     // to the UI
 
+
+
+  updateSegmentJobStatus(job) {
+      this.job = job
+      // pick out the last print message from the job
+
+      var last_element = job.log[job.log.length - 1];
+        if (last_element) {
+        //console.log(last_element)
+        let lastIndex = last_element.lastIndexOf('\n')
+        //console.log('lastindex:',lastIndex)
+        let progressSnippet = last_element.substring(lastIndex)
+        //console.log(progressSnippet)
+        //console.log(progressSnippet.substring(1,9))
+        //console.log(progressSnippet.substring(1,2))
+        // if this is a progress update string, then extract the percentage done and update the state variable
+        if (progressSnippet.substring(1,9)=='progress') {
+          // starting at this position, is the string of the value to update the progress bar
+          this.segmentProgress = progressSnippet.substring(11)
+          console.log('segment percentage:',this.progress)
+        }
+      }
+    },
+
+
+
     async generateSegmentation() {
         this.runCompleted = false;
         this.segmentUploadInProgress = true;
 
         // create a spot in Girder for the output of the REST call to be placed
         const outputItem = (await this.girderRest.post(
-          `item?folderId=${this.scratchFolder._id}&name=result`,
+          `item?folderId=${this.scratchFolder._id}&name=segmentResult`,
         )).data
 
         // create a spot in Girder for the output of the REST call to be placed
@@ -441,17 +519,29 @@ async uploadSegmentationFile(file) {
         )).data;
 
         // wait for the job to finish
-        await pollUntilJobComplete(this.girderRest, this.job, this.updateJobStatus);
+        await pollUntilJobComplete(this.girderRest, this.job, this.updateSegmentJobStatus);
 
 
         // display the uploaded image on the webpage
         this.segmentUploadInProgress = false;
 	      console.log('calculated segmentation image...');
-        this.segmentFile = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
+        this.segmentResult = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
+        this.segmentFileName = 'Generated Segmentation'
 
+         // set this variable to display the resulting output image on the webpage 
+         
         this.readyToDisplaySegmentation = true;
-        this.renderSegmentImage();
-        return this.segmentFile
+        this.segmentImageUrl = window.URL.createObjectURL(this.segmentResult);
+
+        console.log('render segment finished')
+        this.segmentDisplayed = true
+
+        // ACTION - get the item's file 
+        //  lookup right here 
+        this.segmentFile = (await this.girderRest.get(`item/${outputItem._id}/files`)).data[0];
+        this.renderSegmentImage()
+
+        return this.segmentImageUrl
     },
 
 

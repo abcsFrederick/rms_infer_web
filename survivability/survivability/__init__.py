@@ -19,6 +19,9 @@ import datetime
 import string
 import sys
 
+# needed for exponential function applied to NN predicted value
+import math
+
 # needed to copy imagery from girder to files for endpoint access
 import girder_client
 
@@ -289,8 +292,10 @@ class SurvivabilityInference_API(Resource):
         print('completed all folds')
 
         # find the average of the model results
-        predict_values_2nd = sum(resultArraySecondBest) / len(resultArraySecondBest)
-        predict_values_mean = sum(resultArrayMean) / len(resultArrayMean)
+        # NOTE: normalizing network output to range 0..1 to make the plot look better
+        # we round the values to four decimal places so the rendering looks better
+        predict_values_2nd = round(math.exp(sum(resultArraySecondBest) / len(resultArraySecondBest)),4)
+        predict_values_mean = round(math.exp(sum(resultArrayMean) / len(resultArrayMean)),4)
 
         # new output of classification statistics in a string
         statistics = self.generateStatsString(predict_values_2nd,predict_values_mean)
@@ -408,6 +413,37 @@ class W11_Classifier(nn.Module):
 
         return z
 
+
+class W18_Classifier(nn.Module):
+    def __init__(self, n_classes, numgenes):
+        super(W18_Classifier, self).__init__()
+        self.effnet = timm.create_model('resnet18d', pretrained=True)
+        in_features = 1000
+        hazard_func = 1
+
+        self.final_act = nn.Tanh()
+        self.elu = nn.ELU()
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.5)
+        self.alpha_dropout = nn.AlphaDropout(0.5)
+        self.l0 = nn.Linear(in_features, 64, bias=True)
+        self.l1 = nn.Linear(numgenes, 64, bias=True)
+        self.l2 = nn.Linear(64, 64, bias=True)
+        self.l3 = nn.Linear(64, hazard_func, bias=True)
+
+    def forward(self, input, gene_muts):
+        x = self.effnet(input)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.l0(x)
+        x = self.relu(x)  # 64
+        x = self.dropout(x)
+        z = self.l3(x)
+        z = self.final_act(z)
+
+        return z
+
+
 def smart_sort(x, permutation):
     ret = x[permutation]
     return ret
@@ -438,7 +474,18 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
     saved_weights_list = [model]
     print(saved_weights_list)
 
-    model = W11_Classifier(num_classes, args.numgenes)
+    # there are two different classifier types, use the model filename to delineate
+    # which type e.g. 'surv_w11_xxx' will be a type 11 instead of type 18
+
+    print('model type:',model[14:17])
+    if model[14:17] == 'w11':
+        print('found model type w11')
+        model = W11_Classifier(num_classes, args.numgenes)
+    elif model[14:17] == 'w18':
+        print('found model type w18')
+        model = W18_Classifier(num_classes, args.numgenes)
+    else:
+        print("***************** error: could not find matching model type to load for file",model)
 
     model.eval()
     model = nn.DataParallel(model)
@@ -464,6 +511,13 @@ def meanOfNumericList(l):
     for i in range(len(l)):
         sum += l[i]
     return (sum / len(l))
+
+# convert between -1..1 normalization and 0..1 normalization
+def zeroToOneNorm(input):
+    offset = input - (-1.0)
+    newoffset = offset/2.0
+    return newoffset
+
 
 # given filenames for the image and segmentation, run the model forward and return the prediction 
 
