@@ -336,7 +336,15 @@ export default {
         // wait for the job to finish and then download the cohort table
         await pollUntilJobComplete(this.girderRest, this.job, job => this.job = job);
         this.cohortData = csvParse((await this.girderRest.get(`item/${cohortItem._id}/download`)).data);
-        //console.log('returned cohort',this.cohortData)
+
+        // convert string values to float values for vega spec in place in variable this.cohortData
+        for (let index = 0; index < this.cohortData.length; index++) {
+          var element = this.cohortData[index];
+          element['Hazard Prediction'] = parseFloat(element['Hazard Prediction'])
+          this.cohortData[index] = element
+          
+        }
+        console.log('returned cohort',this.cohortData)
 
         // write the prediction to the web console 
         console.log('prediction', this.stats, this.stats.secondBest)
@@ -354,7 +362,7 @@ export default {
         // of data with a vertical line superimposed with the value of the analysis for this particular image. 
 
         var vegaLiteSpec = {
-            "title": "Predicted Survivability of the Uploaded Image Compared to Our Cohort",
+            "title": "Predicted Risk Group of the Uploaded Image Compared to Our Cohort",
             "height":250,
             "width": 500,
             "data": {

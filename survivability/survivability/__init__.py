@@ -294,8 +294,12 @@ class SurvivabilityInference_API(Resource):
         # find the average of the model results
         # NOTE: normalizing network output to range 0..1 to make the plot look better
         # we round the values to four decimal places so the rendering looks better
-        predict_values_2nd = round(math.exp(sum(resultArraySecondBest) / len(resultArraySecondBest)),4)
-        predict_values_mean = round(math.exp(sum(resultArrayMean) / len(resultArrayMean)),4)
+        predict_values_2nd = round(sum(resultArraySecondBest) / len(resultArraySecondBest),4)
+        predict_values_mean = round(sum(resultArrayMean) / len(resultArrayMean),4)
+
+        # for a while, we were rescaling by the exponential function, but this has been removed
+        #predict_values_2nd = round(math.exp(sum(resultArraySecondBest) / len(resultArraySecondBest)),4)
+        #predict_values_mean = round(math.exp(sum(resultArrayMean) / len(resultArrayMean)),4)
 
         # new output of classification statistics in a string
         statistics = self.generateStatsString(predict_values_2nd,predict_values_mean)
