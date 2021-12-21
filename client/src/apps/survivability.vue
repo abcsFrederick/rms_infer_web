@@ -44,7 +44,7 @@
               :disabled="!readyToRun"
               @click="run"
             >
-              Go
+              Calculate Risk Group
             </v-btn>
           </v-flex>
 
@@ -88,7 +88,6 @@
               will be displayed below and will be available for downloading, using the download button.  If you would like to segment additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
               <br><br>
 		We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
-		If you have any questions while using our system, please feel free to email Dr. Yanling Liu at liuy5@mail.nih.gov.  
 		</b>
             </v-card-text>
           </v-card>
@@ -551,6 +550,7 @@ async uploadSegmentationFile(file) {
     async generateSegmentation() {
         this.runCompleted = false;
         this.segmentGenerationInProgress = true;
+        this.segmentFileName = 'Generating Segmentation...'
 
         // create a spot in Girder for the output of the REST call to be placed
         const outputItem = (await this.girderRest.post(
@@ -588,7 +588,7 @@ async uploadSegmentationFile(file) {
         this.readyToDisplaySegmentation = true;
         this.segmentImageUrl = window.URL.createObjectURL(this.segmentResult);
 
-        console.log('render segment finished')
+        console.log('generate segment finished')
         this.segmentDisplayed = true
 
         // ACTION - get the item's file 

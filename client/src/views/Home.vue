@@ -262,16 +262,19 @@ computed: {
 
 asyncComputed: {
   getURL() {
-    let test = async (girderRest) => {
-        // AD plugin API to fetch CI information/ returned URL(normally main app url) 
-        // from your configuration(girder configure page.) after you set them.
-        let inner = (await girderRest.get('/nciLogin/loginCallback', {})).data
-        return inner;
-      }
-      test(this.girderRest).then(res => {
-        // URL to CILogin page
-        this.ADURL = res;
-      })
+
+    // commented out since we aren't using CiLogin
+
+    // let test = async (girderRest) => {
+    //     // AD plugin API to fetch CI information/ returned URL(normally main app url) 
+    //     // from your configuration(girder configure page.) after you set them.
+    //     let inner = (await girderRest.get('/nciLogin/loginCallback', {})).data
+    //     return inner;
+    //   }
+    //   test(this.girderRest).then(res => {
+    //     // URL to CILogin page
+    //     this.ADURL = res;
+    //   })
   }
 },
 

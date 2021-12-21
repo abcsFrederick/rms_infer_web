@@ -36,7 +36,7 @@
               :disabled="!readyToRun"
               @click="run"
             >
-              Go
+              Segment the Image
             </v-btn>
           </v-flex>
           <v-flex xs12>
@@ -81,7 +81,6 @@
 		will be displayed below and will be available for downloading, using the download button.  If you would like to segment additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
               <br><br>
 		We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
-		If you have any questions while using our system, please feel free to email Dr. Yanling Liu at liuy5@mail.nih.gov.  
 		</b>
             </v-card-text>
           </v-card>
@@ -103,10 +102,8 @@
         </v-card>
         <v-card v-if="running && job.status == 2" xs12 class="text-xs-center mb-4 ml-4 mr-4">
             Running the Segmentation Neural Network.  Please wait for the output image to show below. 
-            This will take several minutes. If the progress bar starts to move, but then stops further advancing for a few
-            minutes, the segmentation has failed and this has likely been caused by insufficient GPU or system 
-            memory capacities on your testing computer.  Please refresh the browser and try again 
-            with a smaller image. 
+            This will take several minutes. If the progress bar stops further advancing for a few
+            minutes, please refresh the browser page and try again with a smaller image. 
           <v-progress-linear :value="progress"></v-progress-linear>
         </v-card>
 

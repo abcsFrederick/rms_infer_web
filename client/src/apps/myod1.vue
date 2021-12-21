@@ -45,7 +45,7 @@
               :disabled="!readyToRun"
               @click="run"
             >
-              Go
+              Calculate MyOD1 Mutation
             </v-btn>
           </v-flex>
 
@@ -79,16 +79,15 @@
       <v-layout column justify-start fill-height style="margin-left: 400px">
           <v-card class="ma-4">
             <v-card-text>
-              <b>This application segments a whole slide image by executing a neural network that has
-                  been pre-trained to identify for MYOD1 mutations in rhabdomyosarcoma tissue subtypes in H&E stained   
+              <b>This application analyzes a whole slide image for genetic mutation by executing a neural network that has
+                  been pre-trained to predict MYOD1 mutations in rhabdomyosarcoma tissue subtypes in H&E stained   
                   whole slide images.  Uploaded images must in Aperio (.svs) or another similar WSI format.  Large PNG and TIFF files are not supported.
                             <br><br>
-                  After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Go" button to begin execution.  Execution may take up to several minutes,
+                  After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Calculate" button to begin execution.  Execution may take up to several minutes,
                   depending on the size of the input image being provided.  When the analysis is complete, the resulting classification and confidence information 
                   will be displayed below and will be available for downloading, using the download button.  If you would like to classify additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
                             <br><br>
-                  We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
-                  If you have any questions while using our system, please feel free to email Dr. Yanling Liu at liuy5@mail.nih.gov.  
+                  We are delighted that you are trying our early release system for rhabdomyosarcoma analysis.  
                 </b>
             </v-card-text>
           </v-card>
@@ -96,6 +95,11 @@
         <div v-if="uploadIsHappening" xs12 class="text-xs-center mb-4 ml-4 mr-4">
             Image Upload in process...
             <v-progress-linear :value="progressUpload"></v-progress-linear>
+        </div>
+
+       <div v-if="thumbnailInProgress" xs12 class="text-xs-center mb-4 ml-4 mr-4">
+            Generating a thumbnail of the uploaded image to display...
+            <v-progress-linear indeterminate=True></v-progress-linear>
         </div>
 
         <div v-if="inputReadyForDisplay">
@@ -106,6 +110,13 @@
               </v-card>
           </div>
         </div>
+
+       <div v-if="segmentUploadInProgress" xs12 class="text-xs-center mb-4 ml-4 mr-4">
+            Preparing Image Segmentation.  This may take several minutes ...
+            <v-progress-linear :value="progressSegmentation"></v-progress-linear>
+        </div>
+
+
         <div v-if="segmentReadyForDisplay">
   	      <v-card class="mb-4 ml-4 mr-4">
             <v-card-text>Segmentation Mask</v-card-text>
@@ -191,6 +202,8 @@ export default {
     cohortData: [],
     progress: "0",
     progressUpload: "0",
+    progressSegmentation: "0",
+    segmentationProgressUpload: "0",
   }),
   
   asyncComputed: {
@@ -200,7 +213,7 @@ export default {
   },
   computed: {
     readyToRun() {
-      return !!(this.imageFileName ); 
+      return (!!(this.imageFileName ) && !!(this.running)); 
     },
     readyToDownload() {
       return (this.runCompleted)
@@ -226,7 +239,7 @@ export default {
 
     async renderInputImage() {
        if (this.inputDisplayed == false) {
-
+        this.thumbnailInProgress = true
         // create a spot in Girder for the output of the REST call to be placed
           const outputItem = (await this.girderRest.post(
             `item?folderId=${this.scratchFolder._id}&name=thumbnail`,
@@ -252,6 +265,7 @@ export default {
             this.thumbnail = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
             // set this variable to display the resulting output image on the webpage 
             this.inputImageUrl = window.URL.createObjectURL(this.thumbnail);
+            this.thumbnailInProgress = false
           }
           console.log('render input finished')
           // turn off the "upload in process message, since the thumbnail is now finished"
@@ -298,7 +312,7 @@ export default {
 
 
     async run() {
-      this.running = true;
+  
       this.errorLog = null;
 
       // if there was no segmentation file uploaded, then run segmentation on demand
@@ -320,6 +334,8 @@ export default {
         segmentId: this.segmentFile._id,
         statsId: outputItem._id,
       });
+
+      this.running = true
       // start the job by passing parameters to the REST call
       this.job = (await this.girderRest.post(
         `arbor_nova/myod1?${params}`,
@@ -410,7 +426,7 @@ export default {
                 "color": {
                   "field": "Category",
                   "type":"nominal",
-                  "scale": {"domain":["MYOD1-","MYOD1+","Test","Uploaded Image"],"range": ["blue","red","green","orange"]}
+                  "scale": {"domain":["MYOD1-","MYOD1+","Uploaded Image"],"range": ["blue","red","orange"]}
                 }
                 }
               }, 
@@ -506,23 +522,54 @@ export default {
     },
 
 
+    // display the progress of the image upload operation; called by uploadImageFile method during the upload process
+    async receiveSegmentationUploadProgress(status) {
+      //console.log(status.current,status.size)
+      this.segmentationProgressUpload = (status.current/status.size*100.0).toString()
+      console.log('upload progress:',this.segmentationProgressUpload)
+    },
+
+
     async uploadSegmentationFile(file) {
       if (file) {
         this.runCompleted = false;
         this.segmentFileName = file.name;
-        const uploader = new utils.Upload(file, {$rest: this.girderRest, parent: this.scratchFolder});
+        const uploader = new UploadManager(file, {$rest: this.girderRest, parent: this.scratchFolder,progress: this.receiveSegmentationUploadProgress});
         this.segmentUploadInProgress = true;
         this.segmentFile = await uploader.start();
         // display the uploaded image on the webpage
         this.segmentUploadInProgress = false;
 	      console.log('received segmentation image...');
-        //this.imageBlob = (await this.girderRest.get(`file/${this.imageFile._id}/download`,{responseType:'blob'})).data;
-        //this.uploadedImageUrl = window.URL.createObjectURL(this.imageBlob);
-	      //console.log('createObjURL returned: ',this.uploadedImageUrl);
         this.readyToDisplaySegmentation = true;
         this.renderSegmentImage();
       }
     },
+
+
+
+    // display the progress of the image upload operation; called by uploadImageFile method during the upload process
+    async updateSegmentationJobStatus(job) {
+      this.job = job
+      // pick out the last print message from the job
+
+      var last_element = job.log[job.log.length - 1];
+        if (last_element) {
+        //console.log(last_element)
+        let lastIndex = last_element.lastIndexOf('\n')
+        //console.log('lastindex:',lastIndex)
+        let progressSnippet = last_element.substring(lastIndex)
+        //console.log(progressSnippet)
+        //console.log(progressSnippet.substring(1,9))
+        //console.log(progressSnippet.substring(1,2))
+        // if this is a progress update string, then extract the percentage done and update the state variable
+        if (progressSnippet.substring(1,9)=='progress') {
+          // starting at this position, is the string of the value to update the progress bar
+          this.progressSegmentation = progressSnippet.substring(11)
+          //console.log('percentage:',this.progressSegmentation)
+        }
+      }
+    },
+
 
     // this routine is called when the user indicates they want to run the analysis, but there is no
     // segmentation file specifically loaded.  In this case, run the segmentation model and upload the result
@@ -531,10 +578,11 @@ export default {
     async generateSegmentation() {
         this.runCompleted = false;
         this.segmentUploadInProgress = true;
+        this.segmentFileName = 'Generating Segmentation...'
 
         // create a spot in Girder for the output of the REST call to be placed
         const outputItem = (await this.girderRest.post(
-          `item?folderId=${this.scratchFolder._id}&name=result`,
+          `item?folderId=${this.scratchFolder._id}&name=segmentResult`,
         )).data
 
         // create a spot in Girder for the output of the REST call to be placed
@@ -554,17 +602,27 @@ export default {
         )).data;
 
         // wait for the job to finish
-        await pollUntilJobComplete(this.girderRest, this.job, this.updateJobStatus);
+        await pollUntilJobComplete(this.girderRest, this.job, this.updateSegmentationJobStatus);
 
 
         // display the uploaded image on the webpage
         this.segmentUploadInProgress = false;
 	      console.log('calculated segmentation image...');
-        this.segmentFile = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
+        this.segmentResult = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
+        this.segmentFileName = 'Generated Segmentation'
 
+         // set this variable to display the resulting output image on the webpage 
         this.readyToDisplaySegmentation = true;
-        this.renderSegmentImage();
-        return this.segmentFile
+        this.segmentImageUrl = window.URL.createObjectURL(this.segmentResult);
+
+        console.log('generate segment finished')
+
+        // ACTION - get the item's file 
+        //  lookup right here 
+        this.segmentFile = (await this.girderRest.get(`item/${outputItem._id}/files`)).data[0];
+        this.renderSegmentImage()
+
+        return this.segmentImageUrl
     },
 
 
@@ -587,6 +645,7 @@ export default {
 
           console.log('displaying sample input stored at girder ID:',this.fileId);
           this.imageFile = this.fileId
+          this.uploadInProgress = false;
           this.inputDisplayed == false;
           this.renderInputImage();
 
@@ -606,6 +665,7 @@ export default {
           this.segmentFile = this.fileId
           this.segmentDisplayed = false;
           this.readyToDisplayInput = true;
+          this.segmentUploadInProgress = false
           this.renderSegmentImage();
           },
 
