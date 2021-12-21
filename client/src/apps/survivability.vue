@@ -47,7 +47,8 @@
               Go
             </v-btn>
           </v-flex>
-          <v-flex xs12>
+
+          <!-- <v-flex xs12>
             <v-btn
               block
               :class="{ primary: readyToDownload }"
@@ -58,7 +59,8 @@
             >
               Download Results 
             </v-btn>
-          </v-flex>
+          </v-flex> -->
+
           <v-flex xs12>
             <v-btn
               block
@@ -92,8 +94,14 @@
           </v-card>
            <div v-if="uploadIsHappening" xs12 class="text-xs-center mb-4 ml-4 mr-4">
             Image Upload in process...
+            <v-progress-linear :value="progressUpload"></v-progress-linear>
+          </div>
+
+          <div v-if="thumbnailInProgress" xs12 class="text-xs-center mb-4 ml-4 mr-4">
+            Generating a thumbnail of the uploaded image
             <v-progress-linear indeterminate=True></v-progress-linear>
           </div>
+
         <div v-if="inputReadyForDisplay">
           <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
             <v-card class="mb-4 ml-4 mr-4">
@@ -102,12 +110,19 @@
               </v-card>
           </div>
         </div>
-    <div v-if="segmentReadyForDisplay">
+
+        <div v-if="segmentGenerationInProgress" xs12 class="text-xs-center mb-4 ml-4 mr-4">
+          Segmenting the uploaded image.  Please wait for the output to show below.  This may take several minutes.
+          <v-progress-linear :value="segmentProgress"></v-progress-linear>
+        </div>
+
+        <div v-if="segmentReadyForDisplay">
   	      <v-card class="mb-4 ml-4 mr-4">
             <v-card-text>Segmentation Mask</v-card-text>
                <img :src="segmentImageUrl" width="800" height="600" style="display: block; margin: auto"> 
           </v-card>
         </div>
+
         <div v-if="running" xs12 class="text-xs-center mb-4 ml-4 mr-4">
      Running Survivability Neural network inferencing.  Please wait for the output to show below.  This will take several minutes.
           <v-progress-linear :value="surviveProgress"></v-progress-linear>
@@ -146,6 +161,7 @@ import pollUntilJobComplete from '../pollUntilJobComplete';
 import optionsToParameters from '../optionsToParameters';
 import JsonDataTable from '../components/JsonDataTable';
 import vegaEmbed from 'vega-embed';
+import UploadManager from '../utils/upload'
 
 export default {
   name: 'survivability',
@@ -166,6 +182,7 @@ export default {
     readyToDisplaySegmentation: false,
     running: false,
     thumbnail: [],
+    thumbnailInProgress: false,
     result: [],
     segmentResult: [],
     resultColumns: [],
@@ -173,6 +190,7 @@ export default {
     runCompleted: false,
     uploadInProgress: false,
     segmentUploadInProgress: false,
+    segmentGenerationInProgress: false,
     inputImageUrl: '',
     segmentImageUrl: '',
     outputImageUrl: '',
@@ -182,6 +200,7 @@ export default {
     outputDisplayed:  false,
     osd_viewer: [],
     cohortData: [],
+    progressUpload: "0",
     segmentProgress: "0",
     surviveProgress: "0",
     stats: {},
@@ -230,6 +249,7 @@ export default {
           imageId: this.imageFile._id,
           outputId: outputItem._id,
         });
+        this.thumbnailInProgress = true
         // start the job by passing parameters to the REST call
         this.job = (await this.girderRest.post(
           `arbor_nova/wsi_thumbnail?${params}`,
@@ -239,11 +259,11 @@ export default {
           await pollUntilJobComplete(this.girderRest, this.job, job => this.job = job);
 
           if (this.job.status === 3) {
-            this.running = false;
             // pull the URL of the output from girder when processing is completed. This is used
             // as input to an image on the web interface
             this.thumbnail = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
             // set this variable to display the resulting output image on the webpage 
+            this.thumbnailInProgress = false
             this.inputImageUrl = window.URL.createObjectURL(this.thumbnail);
           }
 
@@ -267,7 +287,6 @@ export default {
     },
 
     async run() {
-      this.running = true;
       this.errorLog = null;
 
       // there may be a case where the user uploaded only a target image and not a corresponding segmentation.
@@ -436,7 +455,7 @@ export default {
     }
   },
 
-    async uploadImageFile(file) {
+    async uploadImageFile_original(file) {
       if (file) {
         this.runCompleted = false;
         this.imageFileName = file.name;
@@ -453,6 +472,34 @@ export default {
         this.renderInputImage();
       }
     },
+
+
+    // display the progress of the image upload operation; called by uploadImageFile method during the upload process
+    async receiveUploadProgress(status) {
+      //console.log(status.current,status.size)
+      this.progressUpload = (status.current/status.size*100.0).toString()
+      console.log('upload progress:',this.progressUpload)
+    },
+
+    // upload a file in multiple chunks to support large WSI files; a callback is supported to show progress
+    async uploadImageFile(file) {
+      if (file) {
+        this.runCompleted = false;
+        this.imageFileName = file.name;
+        this.uploadInProgress = true;
+        // this upload manager splits the file into smaller transfers to allow uploading a large file with a progress bar
+        const uploader = new UploadManager(file, {$rest: this.girderRest, parent: this.scratchFolder,progress: this.receiveUploadProgress});
+        this.imageFile = await uploader.start();
+        // display the uploaded image on the webpage
+	      console.log('displaying input image...');
+        this.readyToDisplayInput = true;
+        this.uploadInProgress = false;
+        this.renderInputImage();
+      }
+    },
+
+
+
 async uploadSegmentationFile(file) {
       if (file) {
         this.runCompleted = false;
@@ -494,7 +541,7 @@ async uploadSegmentationFile(file) {
         if (progressSnippet.substring(1,9)=='progress') {
           // starting at this position, is the string of the value to update the progress bar
           this.segmentProgress = progressSnippet.substring(11)
-          console.log('segment percentage:',this.progress)
+          //console.log('segment percentage:',this.segmentProgress)
         }
       }
     },
@@ -503,7 +550,7 @@ async uploadSegmentationFile(file) {
 
     async generateSegmentation() {
         this.runCompleted = false;
-        this.segmentUploadInProgress = true;
+        this.segmentGenerationInProgress = true;
 
         // create a spot in Girder for the output of the REST call to be placed
         const outputItem = (await this.girderRest.post(
@@ -531,7 +578,7 @@ async uploadSegmentationFile(file) {
 
 
         // display the uploaded image on the webpage
-        this.segmentUploadInProgress = false;
+        this.segmentGenerationInProgress = false;
 	      console.log('calculated segmentation image...');
         this.segmentResult = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
         this.segmentFileName = 'Generated Segmentation'

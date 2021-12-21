@@ -48,7 +48,8 @@
               Go
             </v-btn>
           </v-flex>
-          <v-flex xs12>
+
+          <!-- <v-flex xs12>
             <v-btn
               block
               :class="{ primary: readyToDownload }"
@@ -59,7 +60,8 @@
             >
               Download Results 
             </v-btn>
-          </v-flex>
+          </v-flex> -->
+
           <v-flex xs12>
             <v-btn
               block
@@ -90,10 +92,12 @@
                 </b>
             </v-card-text>
           </v-card>
-          <div v-if="uploadIsHappening" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-           Image Upload in process...
-           <v-progress-linear indeterminate=True></v-progress-linear>
+
+        <div v-if="uploadIsHappening" xs12 class="text-xs-center mb-4 ml-4 mr-4">
+            Image Upload in process...
+            <v-progress-linear :value="progressUpload"></v-progress-linear>
         </div>
+
         <div v-if="inputReadyForDisplay">
           <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
             <v-card class="mb-4 ml-4 mr-4">
@@ -150,6 +154,7 @@ import pollUntilJobComplete from '../pollUntilJobComplete';
 import optionsToParameters from '../optionsToParameters';
 import JsonDataTable from '../components/JsonDataTable';
 import vegaEmbed from 'vega-embed';
+import UploadManager from '../utils/upload'
 
 export default {
   name: 'myod1',
@@ -185,7 +190,9 @@ export default {
     osd_viewer: [],
     cohortData: [],
     progress: "0",
+    progressUpload: "0",
   }),
+  
   asyncComputed: {
     scratchFolder() {
       return scratchFolder(this.girderRest);
@@ -456,7 +463,7 @@ export default {
     },
 
 
-    async uploadImageFile(file) {
+    async uploadImageFile_original(file) {
       if (file) {
         this.runCompleted = false;
         this.imageFileName = file.name;
@@ -474,6 +481,30 @@ export default {
     },
 
  
+    // display the progress of the image upload operation; called by uploadImageFile method during the upload process
+    async receiveUploadProgress(status) {
+      //console.log(status.current,status.size)
+      this.progressUpload = (status.current/status.size*100.0).toString()
+      console.log('upload progress:',this.progressUpload)
+    },
+
+    // upload a file in multiple chunks to support large WSI files; a callback is supported to show progress
+    async uploadImageFile(file) {
+      if (file) {
+        this.runCompleted = false;
+        this.imageFileName = file.name;
+        this.uploadInProgress = true;
+        // this upload manager splits the file into smaller transfers to allow uploading a large file with a progress bar
+        const uploader = new UploadManager(file, {$rest: this.girderRest, parent: this.scratchFolder,progress: this.receiveUploadProgress});
+        this.imageFile = await uploader.start();
+        // display the uploaded image on the webpage
+	      console.log('displaying input image...');
+        this.readyToDisplayInput = true;
+        this.uploadInProgress = false;
+        this.renderInputImage();
+      }
+    },
+
 
     async uploadSegmentationFile(file) {
       if (file) {

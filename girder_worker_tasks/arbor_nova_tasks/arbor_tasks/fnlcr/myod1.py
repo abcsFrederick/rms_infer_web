@@ -87,6 +87,7 @@ def myod1(self,image_file, segment_image_file,**kwargs):
     resultArray = []
     models = glob.glob('./models/myod1*')
     totalFolds = len(models)
+    print('found ',totalFolds,'models to average')
     for fold,model in enumerate(models):
         print('**** running with model',model)
         print('****')  

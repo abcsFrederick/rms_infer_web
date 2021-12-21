@@ -87,7 +87,7 @@
           </v-card>
            <div v-if="uploadIsHappening" xs12 class="text-xs-center mb-4 ml-4 mr-4">
            Image Upload in process...
-           <v-progress-linear indeterminate=True></v-progress-linear>
+           <v-progress-linear :value="progressUpload"></v-progress-linear>
         </div>
 
         <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
@@ -131,6 +131,7 @@
               <b>Below is a chart showing the percentages of ARMS, ERMS, Stroma, and Necrosis in the WSI as predicted
             by our segmentation algorithm.  Click the elipsis icon at the top right to save a copy of the chart
             to your local system
+              </b>
               <br>
             </v-card-text>
 
@@ -160,6 +161,7 @@ import optionsToParameters from '../optionsToParameters';
 import JsonDataTable from '../components/JsonDataTable';
 import OpenSeadragon from 'openseadragon';
 import vegaEmbed from 'vega-embed';
+import UploadManager from '../utils/upload';
 
 
 export default {
@@ -193,6 +195,7 @@ export default {
     osd_viewer: [],
     imageStats: {},
     progress: "0",
+    progressUpload: "0",
   }),
   asyncComputed: {
     scratchFolder() {
@@ -411,7 +414,7 @@ export default {
     },
 
 
-    async uploadImageFile(file) {
+    async uploadImageFile_non_chunked(file) {
       if (file) {
         this.runCompleted = false;
         this.imageFileName = file.name;
@@ -427,6 +430,33 @@ export default {
         this.renderInputImage();
       }
     },
+
+    // display the progress of the image upload operation; called by uploadImageFile method during the upload process
+    async receiveProgress(status) {
+      //console.log(status.current,status.size)
+      this.progressUpload = (status.current/status.size*100.0).toString()
+      console.log('upload progress:',this.progressUpload)
+    },
+
+    // upload a file in multiple chunks to support large WSI files; a callback is supported to show progress
+    async uploadImageFile(file) {
+      if (file) {
+        this.runCompleted = false;
+        this.imageFileName = file.name;
+        this.uploadInProgress = true;
+        // this upload manager splits the file into smaller transfers to allow uploading a large file with a progress bar
+        const uploader = new UploadManager(file, {$rest: this.girderRest, parent: this.scratchFolder,progress: this.receiveProgress});
+        this.imageFile = await uploader.start();
+        // display the uploaded image on the webpage
+	      console.log('displaying input image...');
+        //this.imageBlob = (await this.girderRest.get(`file/${this.imageFile._id}/download`,{responseType:'blob'})).data;
+        //this.uploadedImageUrl = window.URL.createObjectURL(this.imageBlob);
+	      //console.log('createObjURL returned: ',this.uploadedImageUrl);
+        this.readyToDisplayInput = true;
+        this.renderInputImage();
+      }
+    },
+
 
 
     async loadSampleImageFile() {
