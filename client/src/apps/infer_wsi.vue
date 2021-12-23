@@ -70,11 +70,13 @@
             <v-card-text>
               <b>This application segments a whole slide image by executing a neural network that has
 		been pre-trained to segment rhabdomyosarcoma tissue subtypes in H&E stained   
-		whole slide images.  Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.
+		whole slide images.  Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.  This algorithm 
+    has been validated using 10x magnification images.  Other uploaded image magnifications will be resampled to 10x before 
+    being analyzed. 
               <br><br>
     To run successfully, this application requires a host system with 32GB or larger of system RAM and an NVIDIA 
-     GPU with 12GB or larger GPU memory size.  This application may fail to complete if the host 
-    system has lower specifications. 
+     GPU with 12GB or larger GPU memory size.  This application may fail to execute corrrectly if the host 
+    system has lower specifications. Large WSI images will require even more host memory to process (e.g.128GB or even more).
               <br><br>
 		After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Go" button to begin execution.  Execution may take up to several minutes,
 		depending on the size of the input image being provided.  When the analysis is complete, the resulting segmentation
@@ -83,11 +85,17 @@
 		We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
 		</b>
             </v-card-text>
+            
           </v-card>
            <div v-if="uploadIsHappening" xs12 class="text-xs-center mb-4 ml-4 mr-4">
            Image Upload in process...
            <v-progress-linear :value="progressUpload"></v-progress-linear>
-        </div>
+          </div>
+
+          <div v-if="thumbnailInProgress" xs12 class="text-xs-center mb-4 ml-4 mr-4">
+            Generating a thumbnail of the uploaded image
+            <v-progress-linear indeterminate=True></v-progress-linear>
+          </div>
 
         <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
   	       <v-card v-if="inputReadyForDisplay" class="mb-4 ml-4 mr-4">
@@ -185,6 +193,7 @@ export default {
     resultString:  '',
     runCompleted: false,
     uploadInProgress: false,
+    thumbnailInProgress: false,
     inputImageUrl: '',
     outputImageUrl: '',
     inputDisplayed:  false,
@@ -222,6 +231,7 @@ export default {
 
     async renderInputImage() {
        if (this.inputDisplayed == false) {
+         this.thumbnailInProgress = true
 
         // create a spot in Girder for the output of the REST call to be placed
           const outputItem = (await this.girderRest.post(
@@ -252,7 +262,7 @@ export default {
 
           console.log('render input finished')
           this.inputDisplayed = true
-          this.uploadInProgress = false
+          this.thumbnailInProgress = false
 	     }
     },
 
@@ -352,7 +362,7 @@ export default {
         // build the spec here.  Inside the method means that the data item will be available. 
         let titleString = 'Percentage of the slide positive for each tissue class'
 
-        var vegaLiteSpec = {
+      var vegaLiteSpec = {
             "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
             "description": "A simple bar chart with embedded data.",
              title: titleString,
@@ -368,7 +378,6 @@ export default {
                 {"Class": "ERMS","percent": this.stats.ERMS}, 
                 {"Class": "Stroma","percent": this.stats.stroma}, 
                 {"Class": "Necrosis","percent": this.stats.necrosis}
-
               ]
             },
            "layer": [{
@@ -398,12 +407,6 @@ export default {
           // render the chart with options to save as PNG or SVG, but other options turned off
           vegaEmbed(this.$refs.visModel,vegaLiteSpec,
                  {padding: 10, actions: {export: true, source: false, editor: false, compiled: false}});
-
-// could use alternative yellow colors:  gold, moccasin, navajowhite, 
-
-
-
-
       }
       if (this.job.status === 4) {
         this.running = false;
@@ -450,6 +453,7 @@ export default {
         //this.uploadedImageUrl = window.URL.createObjectURL(this.imageBlob);
 	      //console.log('createObjURL returned: ',this.uploadedImageUrl);
         this.readyToDisplayInput = true;
+        this.uploadInProgress = false;
         this.renderInputImage();
       }
     },

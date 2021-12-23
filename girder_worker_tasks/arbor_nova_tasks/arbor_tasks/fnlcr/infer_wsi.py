@@ -460,8 +460,9 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
         inference_index = []
         position = 0
         stopcounter = 0
-        for i in range(heights-2):
-            for j in range(widths-2):
+
+        for i in range(heights-1):
+            for j in range(widths-1):
                 #test_patch = org_slide_ext[i * SLIDE_OFFSET: i * SLIDE_OFFSET + IMAGE_SIZE,
                 #             j * SLIDE_OFFSET: j * SLIDE_OFFSET + IMAGE_SIZE, 0:3]
 
@@ -477,7 +478,10 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
                                                        region=myRegion, scale={'magnification': ANALYSIS_MAGNIFICATION},
                                                         fill="white",output={'maxWidth':IMAGE_SIZE,'maxHeight':IMAGE_SIZE})
                 test_patch = rawtile[:,:,0:3]
-                #displayTileMetadata(test_patch,myRegion,i,j)
+                # print out funny shaped patches... 
+                if (test_patch.shape[0] != IMAGE_SIZE) or (test_patch.shape[1] != IMAGE_SIZE):
+                    displayTileMetadata(test_patch,myRegion,i,j)
+                    print(test_patch.shape)
      
                 otsu_patch = otsu_ext[i * SLIDE_OFFSET: i * SLIDE_OFFSET + IMAGE_SIZE,
                              j * SLIDE_OFFSET: j * SLIDE_OFFSET + IMAGE_SIZE]
@@ -527,8 +531,8 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
 
 
         patch_iter = 0
-        for i in range(heights - 2):
-            for j in range(widths-2):
+        for i in range(heights-1 ):
+            for j in range(widths-1):
                 prob_map_seg[i * SLIDE_OFFSET: i * SLIDE_OFFSET + IMAGE_SIZE,
                 j * SLIDE_OFFSET: j * SLIDE_OFFSET + IMAGE_SIZE,:] \
                     += np.multiply(linedup_predictions[patch_iter, :, :, :], kernel)

@@ -378,9 +378,8 @@ export default {
 
         // build the spec here.  Inside the method means that the data item will be available.  This spec is a boxplot of the cohort
         // of data with a vertical line superimposed with the value of the analysis for this particular image. 
-
-        var vegaLiteSpec = {
-            "title": "Predicted Risk Group of the Uploaded Image Compared to Our Cohort",
+var vegaLiteSpec = {
+            "title": "Predicted Survivability of the Uploaded Image Compared to Our Cohort",
             "height":250,
             "width": 500,
             "data": {
@@ -452,6 +451,7 @@ export default {
         vegaEmbed(this.$refs.visModel,vegaLiteSpec,
                   {padding: 10, actions: {export: true, source: false, editor: false, compiled: false}});
     }
+
   },
 
     async uploadImageFile_original(file) {
