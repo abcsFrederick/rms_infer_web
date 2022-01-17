@@ -144,7 +144,7 @@
           </v-card>
 
           <v-card v-if="table.length > 0" class="mt-8 mb-4 ml-4 mr-4">
-            <v-card-text>Probability (0 to 1) of MYOD1+ Mutation:</v-card-text>
+            <v-card-text>AI Predicted Score for MYOD1+ Mutation:</v-card-text>
             <json-data-table :data="table" />
           </v-card>
         </div>
@@ -213,7 +213,7 @@ export default {
   },
   computed: {
     readyToRun() {
-      return (!!(this.imageFileName ) && !!(this.running)); 
+      return !!this.imageFileName && !this.running
     },
     readyToDownload() {
       return (this.runCompleted)
@@ -297,14 +297,14 @@ export default {
         //console.log(last_element)
         let lastIndex = last_element.lastIndexOf('\n')
         //console.log('lastindex:',lastIndex)
-        let progressSnippet = last_element.substring(lastIndex)
+        let progressSnippet = last_element.substring(0,lastIndex)
         //console.log(progressSnippet)
         //console.log(progressSnippet.substring(1,9))
         //console.log(progressSnippet.substring(1,2))
         // if this is a progress update string, then extract the percentage done and update the state variable
-        if (progressSnippet.substring(1,9)=='progress') {
+        if (progressSnippet.substring(0,8)=='progress') {
           // starting at this position, is the string of the value to update the progress bar
-          this.progress = progressSnippet.substring(11)
+          this.progress = progressSnippet.substring(9,lastIndex)
           console.log('percentage:',this.progress)
         }
       }
@@ -358,6 +358,7 @@ export default {
         this.data.columns = ['Positive Score']
         // render by updating the this.table model
         this.table = this.data
+        this.running = false
 
         // compare the result to the threshold
         if (parseFloat(this.stats['Positive Score'])> 0.02) {
@@ -667,6 +668,7 @@ export default {
           this.readyToDisplayInput = true;
           this.segmentUploadInProgress = false
           this.renderSegmentImage();
+          this.running = false;
           },
 
 

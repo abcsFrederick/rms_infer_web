@@ -123,7 +123,7 @@
         </div>
 
         <div v-if="running" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-     Running Survivability Neural network inferencing.  Please wait for the output to show below.  This will take several minutes.
+     Running Survivability Neural network inferencing.  Please wait for the output to show below.  This will take 30-60 minutes.
           <v-progress-linear :value="surviveProgress"></v-progress-linear>
         </div>
         <div v-if="runCompleted" xs12 class="text-xs-center mb-4 ml-4 mr-4">
@@ -211,7 +211,7 @@ export default {
   },
   computed: {
     readyToRun() {
-      return !!this.imageFileName; 
+      return !!this.imageFileName && !this.running; 
     },
     readyToDownload() {
       return (this.runCompleted)
@@ -285,6 +285,44 @@ export default {
 	     }
     },
 
+
+    extractStatsFromJobLog(job) {
+        this.job = job
+        // pick out the last print message from the job
+
+        var last_element = job.log[job.log.length - 1];
+          if (last_element) {
+            console.log('last_element:',last_element)
+            let stats = JSON.parse(last_element)
+            console.log('stats as json:',stats)
+            console.log('secondBest:',stats.secondBest)
+            return stats
+        }
+        return {}
+      },
+
+    updateJobStatus(job) {
+        this.job = job
+        // pick out the last print message from the job
+
+        var last_element = job.log[job.log.length - 1];
+          if (last_element) {
+            //console.log('last_element:',last_element)
+            var lastIndex = last_element.lastIndexOf('\n')
+            //console.log('lastindex:',lastIndex)
+            let progressSnippet = last_element.substring(0,lastIndex)
+            //console.log(progressSnippet)
+            //console.log(progressSnippet.substring(0,9))
+            //console.log(progressSnippet.substring(1,2))
+            // if this is a progress update string, then extract the percentage done and update the state variable
+            if (progressSnippet.substring(0,8)=='progress') {
+              // starting at this position, is the string of the value to update the progress bar
+              this.surviveProgress = progressSnippet.substring(9,lastIndex)
+              console.log('percentage:',this.surviveProgress)
+            }
+        }
+      },
+
     async run() {
       this.errorLog = null;
 
@@ -307,6 +345,7 @@ export default {
       // build the params to be passed into the REST call. This is a var instead of const, because it is reused.  We 
       // aren't returning a girder item, we only return a dictionary of statistics, so there is no result hook here. 
 
+
       var params = optionsToParameters({
         imageFileName: this.imageFileName,
         imageId: this.imageFile._id,
@@ -316,20 +355,25 @@ export default {
       // start the job by passing parameters to the REST call
       this.running = true;
       console.log('starting backend inferencing with params',params)
-      this.result = (await this.girderRest.post(
+      this.job = (await this.girderRest.post(
         `survivability?${params}`,
       )).data;
 
-      if (this.result.status === "success") {
+      // wait for the job to finish and then download the cohort table
+      await pollUntilJobComplete(this.girderRest, this.job, this.updateJobStatus);
+      console.log(this.job)
+
+      // 3 is the status returned by the plugin as job.SUCCESS
+      if (this.job.status === 3) {
         // the survivability model ran successfully, so capture the hazard prediction value that came back
         // from the model and parse so we can draw a rendering chart on the web page showing how the image
         // compared with our previous cohort
 
         this.running = false;
         this.runCompleted = true;
-        this.stats = this.result.stats
+        this.stats = this.extractStatsFromJobLog(this.job)
         console.log('stats:',this.stats)
-        this.stats = JSON.parse(this.stats)
+        //this.stats = JSON.parse(this.stats)
         
         // now fetch the cohort that we need to compare against from girder storage.  This way the cohort
         // can be updated by changing the girder contents instead of hard-coding the web app.
@@ -378,7 +422,7 @@ export default {
 
         // build the spec here.  Inside the method means that the data item will be available.  This spec is a boxplot of the cohort
         // of data with a vertical line superimposed with the value of the analysis for this particular image. 
-var vegaLiteSpec = {
+        var vegaLiteSpec = {
             "title": "Predicted Survivability of the Uploaded Image Compared to Our Cohort",
             "height":250,
             "width": 500,
@@ -620,8 +664,9 @@ async uploadSegmentationFile(file) {
           console.log('displaying sample input stored at girder ID:',this.fileId);
           this.imageFile = this.fileId
           this.inputDisplayed == false;
-          this.renderInputImage();
           this.uploadInProgress = false;
+          this.renderInputImage();
+
 
           // now get the segmentation image to match the WSI
           this.segmentUploadInProgress = true

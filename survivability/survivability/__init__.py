@@ -6,6 +6,7 @@ from girder.api.rest import Resource
 from girder.api.describe import Description, describeRoute, RestException
 from girder.api import access
 from girder.models.file import File
+from girder_jobs.models.job import Job
 
 import pymongo
 from pymongo import MongoClient
@@ -73,25 +74,7 @@ else:
     print('no subprocess method set')
 
 
-# globals
-globals = {}
-globals['mongo-database'] = 'RMS_infer'
-globals['mongo-host'] = 'localhost'
-globals['mongo-log-collection'] = 'logging'
-globals['mongo-port'] = 27017
-globals['timezone'] = 'US/Eastern'
-globals['girderUser'] = 'anonymous'
-globals['girderPassword'] = 'letmein'
-globals['docker'] = True
 
-if globals['docker'] == True:
-    globals['modelPath'] = '/rms_infer_web/models/'
-else:
-    globals['modelPath'] = '/home/ubuntu/rms_infer_web/models/'
-
-
-client = None
-log_collection = None
 
 # declare the handlers for get, put, post, delete
 class SurvivabilityInference_API(Resource):
@@ -212,11 +195,10 @@ class SurvivabilityInference_API(Resource):
         return response
 
     # dummy placeholder
-    def getStats(self):
+    def getStats(self,params):
+        print('getStats called')
         pass
 
-
-    # ************************* image inferencing entry point *****
 
     # define handle dispatcher for POST calls. 
     @access.public
@@ -225,7 +207,44 @@ class SurvivabilityInference_API(Resource):
         .param('data', 'the  command data as a JSON object.', required=False,paramType='query')
         .errorResponse())
 
-    def performInference(self,params):   
+    # instead of calling the function directly, we will create a job so the I/O from the job
+    # can be parsed by the UI for update progress.  We create a local job here, in girder's thread,
+    # because girder worker has a different python stack.  the MYOD and survivability models use a 
+    # different release of the timm NN package. 
+
+    def performInference(self,params):
+        print('starting local job for survivability inferece')
+
+        job = Job().createLocalJob(
+                    module='survivability.localJob',
+                    function='localJobFunction',      
+                    kwargs=params,
+                    title='forward inference for survivabiluty',
+                    type='survivabilityInference',
+                    user=self.getCurrentUser(),
+                    public=True,
+                    asynchronous=True,
+                )
+        Job().scheduleJob(job)
+        return job
+
+
+
+
+
+    # ************************* image inferencing entry point *****
+
+  # define handle dispatcher for POST calls. 
+    @access.public
+    @describeRoute( 
+        Description('dispatcher for POST API calls')
+        .param('imageFileName', 'the name of the input file name', required=False,paramType='query')
+        .param('imageId', 'girder ID of the input file', required=False,paramType='query')
+        .param('segmentFileName', 'the name of the segmentation file name', required=False,paramType='query')
+        .param('segmentId', 'girder ID of the segmentation file', required=False,paramType='query')
+        .errorResponse())
+
+    def performInferenceFunction(self,params):   
         print('POST params:',params)
        
         try:
