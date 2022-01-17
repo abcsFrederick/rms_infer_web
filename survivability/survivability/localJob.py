@@ -369,6 +369,12 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
 
     #print('args were:',args)
     prediction = wsi_inferencing(model,image_file,segment_file,fold, totalFolds, args)
+
+    # clear as much CUDA memory as possible
+    print('deleting model to free up memory')
+    del model
+    torch.cuda.empty_cache()
+
     return prediction
 
 # sort python list of numbers in numeric order
@@ -477,6 +483,12 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
             logits = smart_sort(logits, permu)
             logits = logits.view(-1, 1)
             #print('After logits: ', logits)
+
+            # try to free up GPU space between runs
+            print('freeing up memory')
+            del image_tensor
+            del gene_tensor
+            torch.cuda.empty_cache()
 
         median_index = k % (4000 // args.batch_size)
         medians[median_index] = logits[args.batch_size // 2, 0]
