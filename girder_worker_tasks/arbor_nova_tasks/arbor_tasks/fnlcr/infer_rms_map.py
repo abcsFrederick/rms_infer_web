@@ -1,3 +1,16 @@
+# infer_rms_map.py
+# run RMS segmentation on a whole slide image
+# 
+# KnowledgeVis, LLC
+# all rights reserved
+
+# based on an algorithm developed by Dr. Hyun Jung at the Frederick
+# National Lab for Cancer Research.
+
+# this is a duplicate of infer_wsi except that the segmentation mask is returned 
+# in black and white as a labelmap instead of being colored. 
+
+
 # added for girder interaction as plugin arbor task
 from girder_worker.app import app
 from girder_worker.utils import girder_job
@@ -13,9 +26,9 @@ import sys
 
 #-------------------------------------------
 
-@girder_job(title='inferWSI')
+@girder_job(title='inferRMSmap')
 @app.task(bind=True)
-def infer_wsi(self,image_file,**kwargs):
+def infer_rms_map(self,image_file,**kwargs):
 
     #print(" input image filename = {}".format(image_file))
 
@@ -58,7 +71,6 @@ def infer_wsi(self,image_file,**kwargs):
 
     # return the name of the output file and the stats
     return outname,statoutname
-
 
 
 import random
@@ -295,6 +307,36 @@ def _gray_to_color(input_probs):
     return heatmap
 
 
+
+def _color_to_cancer_map(color_map):
+
+    height = color_map.shape[0]
+    width = color_map.shape[1]
+
+    cancer_map = np.zeros((height, width), np.uint8)
+
+    r_map = color_map[:, :, 0]
+    g_map = color_map[:, :, 1]
+    b_map = color_map[:, :, 2]
+
+    r_map[r_map > 0] = 1
+    g_map[g_map > 0] = 1
+    b_map[b_map > 0] = 1
+
+    arms = (r_map==0) * (g_map==0) * (b_map==1)
+    erms = (r_map==1) * (g_map==0) * (b_map==0)
+    stroma = (r_map == 0) * (g_map == 1) * (b_map == 0)
+    necrosis = (r_map == 1) * (g_map == 1) * (b_map == 0)
+
+    cancer_map[arms] = 255
+    cancer_map[erms] = 255
+    cancer_map[stroma] = 127
+    cancer_map[necrosis] = 127
+
+    return cancer_map
+
+
+
 # return a string identifier of the basename of the current image file
 def returnIdentifierFromImagePath(impath):
     # get the full name of the image
@@ -494,7 +536,6 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
 
                 if position == BATCH_SIZE:
                     batch_predictions = _infer_batch(model, test_patch_tensor)
-
                     for k in range(BATCH_SIZE):
                         linedup_predictions[inference_index[k], :, :, :] = batch_predictions[k, :, :, :]
 
@@ -520,7 +561,7 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
                     print(f'progress: {percent_complete}')
                     sys.stdout.flush()
                     report_count = 0
-
+                
 
         # Very last part of the region.  This is if there is a partial batch of tiles left at the
         # end of the image.
@@ -534,6 +575,7 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
         torch.cuda.empty_cache()
 
         print('GPU inferencing complete. Constructing out image from patches')
+
 
         patch_iter = 0
         for i in range(heights-1 ):
@@ -563,12 +605,14 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
     #imsave(basename_string + '_prob.png', (prob_colormap * 255.0).astype('uint8'))
 
     pred_colormap = _gray_to_color(pred_map_final_stack)
+    # convert to cancer map format for use in MYOD and survivability models 
+    cancer_map = _color_to_cancer_map(pred_colormap)
 
     # for girder task, don't return this image, so commented out
     #imsave(basename_string + '_pred.tif', (pred_colormap * 255.0).astype('uint8'))
 
     # return image instead of saving directly
-    return (pred_colormap*255.0).astype('uint8')
+    return (cancer_map)
 
 
 def _gaussian_2d(num_classes, sigma, mu):
@@ -701,27 +745,23 @@ def generateStatsString(predict_image):
     # calculate total pixels = height*width
     total_pixels = img_arr.shape[0]*img_arr.shape[1]
     # count the pixels in the non-zero masks
-    erms_count = np.count_nonzero((img_arr == [255, 0, 0]).all(axis = 2))
-    stroma_count = np.count_nonzero((img_arr == [0, 255, 0]).all(axis = 2)) 
-    arms_count = np.count_nonzero((img_arr == [0, 0, 255]).all(axis = 2)) 
-    necrosis_count = np.count_nonzero((img_arr == [255, 255, 0]).all(axis = 2)) 
+    cancer_count = np.count_nonzero((img_arr == [255]).all(axis = 0))
+    noncancer_count = np.count_nonzero((img_arr == [127]).all(axis = 0)) 
+    
     # calculate sum of pixels occupied by any type of tissue, so we can report each type as a 
     # percentage of tissue, not of the whole slide. This way totals will always add up to 100%
-    total_of_all_tissue = erms_count + arms_count + stroma_count + necrosis_count
-    print(f'erms {erms_count}, stroma {stroma_count}, arms {arms_count}, necrosis {necrosis_count}')
-    erms_percent = erms_count / total_of_all_tissue * 100.0
-    arms_percent = arms_count / total_of_all_tissue * 100.0
-    necrosis_percent = necrosis_count / total_of_all_tissue * 100.0
-    stroma_percent = stroma_count / total_of_all_tissue * 100.0
+    #total_of_all_tissue = cancer_count + noncancer_count 
+    print(f'cancer {cancer_count}, non-cancer {noncancer_count}')
+    #cancer_percent = cancer_count / total_of_all_tissue * 100.0
+    #noncancer_percent = noncancer_count / total_of_all_tissue * 100.0
+  
     # pack output values into a string returned as a file
     #statsString = 'ERMS:',erms_percent+'\n'+
     #              'ARMS:',arms_percent+'\n'+
     #              'stroma:',stroma_percent+'\n'+
     #              'necrosis:',necrosis_percent+'\n'
-    statsDict = {'ERMS':erms_percent,
-                 'ARMS':arms_percent, 
-                 'stroma':stroma_percent, 
-                 'necrosis':necrosis_percent }
+    statsDict = {'cancer':cancer_count,
+                 'non-cancer':noncancer_count }
     # convert dict to json string
     print('statsdict:',statsDict)
     statsString = json.dumps(statsDict)

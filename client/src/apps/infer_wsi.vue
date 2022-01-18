@@ -78,9 +78,14 @@
      GPU with 12GB or larger GPU memory size.  This application may fail to execute corrrectly if the host 
     system has lower specifications. Large WSI images will require even more host memory to process (e.g.128GB or even more).
               <br><br>
-		After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Go" button to begin execution.  Execution may take up to several minutes,
+		After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Segment the Image" button to begin execution.  Execution may take up to several minutes,
 		depending on the size of the input image being provided.  When the analysis is complete, the resulting segmentation
-		will be displayed below and will be available for downloading, using the download button.  If you would like to segment additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
+		will be displayed below and will be available for downloading, using the download button.  
+    <br><br>
+    If the progress bar stops further advancing for a few
+    minutes, please refresh the browser page and try again with a smaller image.
+  <br><br>
+    If you would like to segment additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
               <br><br>
 		We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
 		</b>
@@ -110,8 +115,7 @@
         </v-card>
         <v-card v-if="running && job.status == 2" xs12 class="text-xs-center mb-4 ml-4 mr-4">
             Running the Segmentation Neural Network.  Please wait for the output image to show below. 
-            This will take several minutes. If the progress bar stops further advancing for a few
-            minutes, please refresh the browser page and try again with a smaller image. 
+            This will take several minutes.  
           <v-progress-linear :value="progress"></v-progress-linear>
         </v-card>
 

@@ -4,6 +4,7 @@
 
 from arbor_nova_tasks.arbor_tasks.fnlcr import infer_rhabdo 
 from arbor_nova_tasks.arbor_tasks.fnlcr import infer_wsi 
+from arbor_nova_tasks.arbor_tasks.fnlcr import infer_rms_map
 from arbor_nova_tasks.arbor_tasks.fnlcr import wsi_thumbnail
 from arbor_nova_tasks.arbor_tasks.fnlcr import myod1 
 from arbor_nova_tasks.arbor_tasks.fnlcr import survivability 
@@ -21,6 +22,7 @@ class ArborNova(Resource):
         self.resourceName = 'arbor_nova'
         self.route('POST', ('infer_rhabdo', ), self.infer_rhabdo)
         self.route('POST', ('infer_wsi', ), self.infer_wsi)
+        self.route('POST', ('infer_rms_map', ), self.infer_rms_map)
         self.route('POST', ('wsi_thumbnail', ), self.wsi_thumbnail)
         self.route('POST', ('myod1', ), self.myod1)
         self.route('POST', ('survivability', ), self.survivability)
@@ -57,7 +59,7 @@ class ArborNova(Resource):
                 ])
         return result.job
 
-        # ---DNN infer command line for FNLCR
+    # ---DNN infer command line for FNLCR
     @access.token
     @filtermodel(model='job', plugin='jobs')
     @autoDescribeRoute(
@@ -83,6 +85,36 @@ class ArborNova(Resource):
                 ]
                 )
         return result.job
+
+
+    # ---cancer map version of segmentation method
+    @access.token
+    @filtermodel(model='job', plugin='jobs')
+    @autoDescribeRoute(
+        Description('perform forward inferencing using a pretrained network')
+        .param('imageId', 'The ID of the source, an Aperio .SVS image file.')
+        .param('outputId', 'The ID of the output item where the output file will be uploaded.')
+        .param('statsId', 'The ID of the output item where the output file will be uploaded.')
+        .errorResponse()
+        .errorResponse('Write access was denied on the parent item.', 403)
+        .errorResponse('Failed to upload output file.', 500)
+    )
+    def infer_rms_map(
+            self, 
+            imageId, 
+            outputId,
+            statsId
+    ):
+        result = infer_rms_map.delay(
+                GirderFileId(imageId), 
+                girder_result_hooks=[
+                    GirderUploadToItem(outputId),
+                    GirderUploadToItem(statsId),
+                ]
+                )
+        return result.job
+
+
 
     # --- generate a thumbnail from a pyramidal image
     @access.token

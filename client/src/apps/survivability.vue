@@ -79,15 +79,17 @@
           <v-card class="ma-4">
             <v-card-text>
               <b>
-              An ensemble model, constructed by combining a set of neural network models, has been trained to generate a risk prediction from an H&E whole slide.
-              This application runs the model on an uploaded image to generate risk categories derived from our research cohort. 
+              For the survivability analsys, an ensemble model, constructed by combining a set of neural network models, has been trained to generate a risk prediction from an H&E whole slide image.
+              This application runs the ensemble model on an uploaded image to generate risk categories derived from comoparing with our research cohort. 
               Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.
               <br><br>
-              After selecting an image for upload, please be patient during the upload process. Once the input image is displayed below, please click the "Go" button to begin execution.  Execution may take up to several minutes,
+              After selecting an image for upload, please be patient during the upload process. Once the input image is displayed below, please click the 
+              "Calculate Risk Analysis" button to begin execution.  Execution may take longer than 30 minutes,
               depending on the size of the input image being provided.  When the analysis is complete, the analysis result
-              will be displayed below and will be available for downloading, using the download button.  If you would like to segment additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
+              will be displayed below and will be available for downloading, using the download button.  If you would like to analyze additional images, 
+              please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
               <br><br>
-		We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
+		          Thank you for trying our early release system for rhabdomyosarcoma whole slide analysis. 
 		</b>
             </v-card-text>
           </v-card>
@@ -614,7 +616,7 @@ async uploadSegmentationFile(file) {
         });
         // start the job by passing parameters to the REST call
         this.job = (await this.girderRest.post(
-          `arbor_nova/infer_wsi?${params}`,
+          `arbor_nova/infer_rms_map?${params}`,
         )).data;
 
         // wait for the job to finish
