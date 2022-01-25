@@ -173,6 +173,7 @@ class ArborNova(Resource):
     @autoDescribeRoute(
         Description('perform classification through forward inferencing using a pretrained network')
         .param('imageId', 'The ID of the source, an Aperio .SVS image file.')
+        .param('segmentId', 'The ID of the segmentation image, a PNG or TIFF image.')
         .param('statsId', 'The ID of the output item where the output file will be uploaded.')
         .errorResponse()
         .errorResponse('Write access was denied on the parent item.', 403)
@@ -180,11 +181,13 @@ class ArborNova(Resource):
     )
     def survivability(
             self, 
-            imageId, 
+            imageId,
+            segmentId,
             statsId
     ):
         result = survivability.delay(
                 GirderFileId(imageId), 
+                GirderFileId(segmentId), 
                 girder_result_hooks=[
                     GirderUploadToItem(statsId),
                 ])

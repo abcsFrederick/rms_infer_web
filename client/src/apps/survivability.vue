@@ -353,12 +353,18 @@ export default {
         imageId: this.imageFile._id,
         segmentFileName: this.segmentFileName,
         segmentId: this.segmentFile._id,
+        statsId: outputItem._id
       });
       // start the job by passing parameters to the REST call
       this.running = true;
       console.log('starting backend inferencing with params',params)
+      //this.job = (await this.girderRest.post(
+      //  `survivability?${params}`,
+      //)).data;
+
+      // switch to the arbor nova version 
       this.job = (await this.girderRest.post(
-        `survivability?${params}`,
+        `arbor_nova/survivability?${params}`,
       )).data;
 
       // wait for the job to finish and then download the cohort table
@@ -373,9 +379,10 @@ export default {
 
         this.running = false;
         this.runCompleted = true;
-        this.stats = this.extractStatsFromJobLog(this.job)
+        this.result = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'text'})).data;
+        this.stats = this.result
+        //this.stats = this.extractStatsFromJobLog(this.job)
         console.log('stats:',this.stats)
-        //this.stats = JSON.parse(this.stats)
         
         // now fetch the cohort that we need to compare against from girder storage.  This way the cohort
         // can be updated by changing the girder contents instead of hard-coding the web app.
