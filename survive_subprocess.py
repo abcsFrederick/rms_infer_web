@@ -1,7 +1,5 @@
 
-# for job
-from girder_jobs.constants import JobStatus
-from girder_jobs.models.job import Job
+
 import json
 
 import sys
@@ -53,133 +51,40 @@ else:
 client = None
 log_collection = None
 
-# this is a function called by Girder's createLocalJob() call
+#
 
-# we spawn a "local job" that is executed by the Girder thread, but acts like
-# a job.  We can get logs back from local jobs, so this is used to parse the
-# log by the UI for progress updates.  The called routine logs "progress: x"
-# occasionally, which the UI is looking for.  If the job fails for some reason,
-# we print out the reason for the failure in the job log, which show up in 
-# girder's 'error.log'
 
-def localJobFunction(job):
-    print("Hooray!  I created a local job! ")
-    print('job:',job)
-    # run the inference job
-    print('CWD is:',os.getcwd())
-    # tell girder that we are running now
-    job = Job().updateJob(job, status=JobStatus.RUNNING)
-    try:
-        stats = performInferenceFunction(job)
-       
-    except Exception as e:
-        print('oh no....')
-        print(e)
-
-        job = Job().updateJob(job, status=JobStatus.ERROR,log=repr(e))
-    else:
-        status = JobStatus.SUCCESS
-        job = Job().updateJob(
-            job, log=stats, status=status)
+def performInferenceFunction(image_file,segment_file,model_file):   
     
+    print('performInference image_file',image_file)
+    print('performInference segment_file',segment_file)
+    print('performInference model_file',model_file)
 
-
-
-    # ************************* image inferencing entry point *****
-
-
-def performInferenceFunction(job):   
-    print('POST job:',job)
-    
-    try:
-        print('job:',job)
-        image_filename = job['kwargs']['imageFileName']
-        imageId = job['kwargs']['imageId']
-        segment_filename = job['kwargs']['segmentFileName']
-        segmentId = job['kwargs']['segmentId']
-
-    except:
-        print('could not read image file variable')
-
-    # hard to find the file on the disk, so download again.  Inefficient, but it works.
-    # fetch the actual image data from the uploaded record.  Do this once so all folds 
-    # can have access. 
-
-    print('finding image in girder backend')
-    gc = girder_client.GirderClient(apiUrl='http://localhost:8080/girder/api/v1')
-    login = gc.authenticate(globals['girderUser'],globals['girderPassword'])
-    print('logged into girder successfully.')
-    print('trying to local filename of file',imageId)
-    try:
-        fileRec = gc.getFile(imageId)
-        print('found file',fileRec['_id'])
-        print('found image file record',fileRec)
-        print('downloading file')
-        gc.downloadFile(fileRec['_id'],'/tmp/imageFile')
-        image_file = '/tmp/imageFile'
-        print('setting infile name and downloaded it')
-    except:
-        print('could not find or read matching image file in girder')
-    try:
-        segfileRec = gc.getFile(segmentId)
-        #print('found file',fileRec['_id'])
-        print('found segment file record',segfileRec)
-        # hard to find the file on the disk, so download again.  Inefficient, but it works
-        print('downloading segmentfile')
-        gc.downloadFile(segfileRec['_id'],'/tmp/segmentFile')
-        segment_file = '/tmp/segmentFile'
-    except:
-        print('could not find or read matching segmentation file in girder')    
 
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     DEVICE = torch.device(f"cuda:0")
-    print('perform forward inferencing')
+    print('perform forward inferencing - from subprocess')
 
-    # find and run all models in the models directory. Return the average value of the models
-    # as the final result
-    resultArraySecondBest = []
-    resultArrayMean = []
-    models = glob.glob('./models/surv*')
-    totalFolds = len(models)
-    print('found ',totalFolds,'models to run')
-    # set an initial 5% progress while the first fold runs
-    logMessage = 'progress: 2%\n'
-    print(logMessage)
-    job = Job().updateJob(job, log=logMessage)
 
-    # loop through the models and update the job progress after each one completes
-    for fold,model in enumerate(models):
-        print('**** running with model',model)
-        print('****')  
-        predict_values = survival_inferencing(image_file,segment_file,model,fold,totalFolds)
-        #predict_values = {'secondBest':0.1,'mean':0.2}
-        print('prediction: ',predict_values)
-        resultArraySecondBest.append(predict_values['secondBest'])
-        resultArrayMean.append(predict_values['mean'])
-        #print('progress:',(fold+1)/totalFolds*100.0)
-        logMessage = 'progress: %4d%%\n' % ((fold+1)/totalFolds * 100)
-        print(logMessage)
-        job = Job().updateJob(job, log=logMessage)
-    print('completed all folds')
+    # run a single model and update the job progress after each one completes
+
+    print('**** running with model',model_file)
+    predict_values = survival_inferencing(image_file,segment_file,model_file,1,1)
+    #predict_values = {'secondBest':0.1,'mean':0.2}
+    print('prediction: ',predict_values)
+    print('completed single execution')
 
     # find the average of the model results
     # NOTE: normalizing network output to range 0..1 to make the plot look better
     # we round the values to four decimal places so the rendering looks better
-    predict_values_2nd = round(sum(resultArraySecondBest) / len(resultArraySecondBest),4)
-    predict_values_mean = round(sum(resultArrayMean) / len(resultArrayMean),4)
-
-    # for a while, we were rescaling by the exponential function, but this has been removed
-    #predict_values_2nd = round(math.exp(sum(resultArraySecondBest) / len(resultArraySecondBest)),4)
-    #predict_values_mean = round(math.exp(sum(resultArrayMean) / len(resultArrayMean)),4)
+    predict_values_2nd = round(predict_values['secondBest'],4)
+    predict_values_mean = round(predict_values['mean'],4)
 
     # new output of classification statistics in a string
     statistics = generateStatsString(predict_values_2nd,predict_values_mean)
     print(statistics)
 
-    # log and return the result
-    logMessage = statistics+'\n'
-    job = Job().updateJob(job, log=logMessage)
     return statistics
 
 
@@ -514,3 +419,12 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
 
     gc.collect()
     return returnVal
+
+
+def main():
+    print("Hello World!")
+    results = performInferenceFunction(sys.argv[1],sys.argv[2],sys.argv[3])
+    
+
+if __name__ == "__main__":
+    main()
