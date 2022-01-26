@@ -3,45 +3,21 @@ from girder_worker.app import app
 from girder_worker.utils import girder_job
 from tempfile import NamedTemporaryFile
 
-import billiard as multiprocessing
-from billiard import Queue, Process 
+import subprocess
+
 import json
 
 #-------------------------------------------
 
-import torch
-from torch.utils.data import Dataset as BaseDataset
-import torch.nn as nn
-import torch.optim as optim
-from torch.optim import lr_scheduler
-import torch.nn.functional as F
-from torch.autograd import Function
-from torchvision import datasets, models, transforms
-import torchnet.meter.confusionmeter as cm
 
-from sklearn.preprocessing import label_binarize
-from sklearn.metrics import roc_auc_score, roc_curve
-from sklearn.metrics import auc as calc_auc
-
-import openslide as op
 import argparse
 import numpy as np
-import torchvision
-import cv2
-import time
-from skimage.io import imread
-from tifffile import imsave
-import matplotlib.pyplot as plt
+
 import time
 import random
 import os, glob
 import copy
-import pandas as pd
-import albumentations as albu
-from albumentations import Resize
-import gc
-import timm
-from radam import RAdam
+
 
 from PIL import Image
 
@@ -56,8 +32,8 @@ PRINT_FREQ = 20
 @girder_job(title='survivability')
 @app.task(bind=True)
 def survivability(self,image_file, segment_image_file,**kwargs):
-    print('running Arbor Nova survivability')
-    print(" input image filename = {}".format(image_file))
+    print('running ensemble survivability model')
+    #print(" input image filename = {}".format(image_file))
 
 
     # set the UI to 0% progress initially. stdout is parsed by the ui
@@ -72,13 +48,13 @@ def survivability(self,image_file, segment_image_file,**kwargs):
     totalFolds = len(models)
     for fold,model in enumerate(models):
         print('**** running with model',model)
-        print('****')  
         predict_values = start_remote_process(image_file,segment_image_file,model,fold,totalFolds)
         print(predict_values)
-        resultArraySecondBest.append(predict_values['secondBest'])
-        resultArrayMean.append(predict_values['mean'])
+        resultArraySecondBest.append(float(predict_values['secondBest']))
+        resultArrayMean.append(float(predict_values['mean']))
         #resultArray.append(predict_values)
-        print('result is now:',resultArray)
+        progressPercent = round((fold+1)/totalFolds*100,2)
+        print(f'progress: {progressPercent}')
     print('completed all folds')
 
  
@@ -111,7 +87,7 @@ def survivability(self,image_file, segment_image_file,**kwargs):
 # calculate the statistics for the image by converting to numpy and comparing masks against
 # the tissue classes. create masks for each class and count the number of pixels
 def generateStatsString(second,mean):         
-    statsDict = {'secondBest':second,'mean':mean }
+    statsDict = {"secondBest":second,"mean":mean }
     # convert dict to json string
     print('statsdict:',statsDict)
     statsString = json.dumps(statsDict)
@@ -123,9 +99,19 @@ def generateStatsString(second,mean):
 
 
 def start_remote_process(image_file,segmentation_mask,modelFilePath,foldCount,totalFolds):
-    print('-----------------------------------')
-    print('pretend running fold:',foldCount)
-    print('image:',image_file)
-    print('segment:',segmentation_mask)
-    print('model file:',modelFilePath)
-    return {'secondBest':0.34,'mean':0.33}
+    #print('-----------------------------------')
+    #print('pretend running fold:',foldCount)
+    #print('image:',image_file)
+    #print('segment:',segmentation_mask)
+    #print('model file:',modelFilePath)
+
+    print('spawning subprocess to run GPU')
+    outputText = subprocess.run(['/home/clisle/proj/nci/code/rms_infer_web/survive_shell.sh',image_file,segmentation_mask,modelFilePath],
+                        stdout=subprocess.PIPE).stdout.decode('utf-8')
+
+    #print('--------------------------')
+    #print('output of subprocess was:')
+    print(outputText)
+    outputAsDict = json.loads(outputText)
+    print(outputAsDict)
+    return outputAsDict

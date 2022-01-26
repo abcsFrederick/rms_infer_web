@@ -56,24 +56,24 @@ log_collection = None
 
 def performInferenceFunction(image_file,segment_file,model_file):   
     
-    print('performInference image_file',image_file)
-    print('performInference segment_file',segment_file)
-    print('performInference model_file',model_file)
+    #print('performInference image_file',image_file)
+    #print('performInference segment_file',segment_file)
+    #print('performInference model_file',model_file)
 
 
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     DEVICE = torch.device(f"cuda:0")
-    print('perform forward inferencing - from subprocess')
+    #print('perform forward inferencing - from subprocess')
 
 
     # run a single model and update the job progress after each one completes
 
-    print('**** running with model',model_file)
+    #print('**** running with model',model_file)
     predict_values = survival_inferencing(image_file,segment_file,model_file,1,1)
     #predict_values = {'secondBest':0.1,'mean':0.2}
-    print('prediction: ',predict_values)
-    print('completed single execution')
+    #print('prediction: ',predict_values)
+    #print('completed single execution')
 
     # find the average of the model results
     # NOTE: normalizing network output to range 0..1 to make the plot look better
@@ -83,18 +83,19 @@ def performInferenceFunction(image_file,segment_file,model_file):
 
     # new output of classification statistics in a string
     statistics = generateStatsString(predict_values_2nd,predict_values_mean)
-    print(statistics)
-
+    #print(statistics)
     return statistics
 
 
 # count the number of polygons so we can print a graph of the number of detected regions
 def generateStatsString(second,mean):         
-    statsDict = {'secondBest':second,'mean':mean }
+    statsDict = {"secondBest":str(second),"mean":str(mean) }
     # convert dict to json string
-    print('statsdict:',statsDict)
+    #print(statsDict)
     statsString = json.dumps(statsDict)
+    print(statsString)
     return statsString
+    #return statsDict
 
 
 #---------------------------
@@ -144,11 +145,11 @@ def convert_to_tensor(batch):
 
 def load_best_model(model, path_to_model, best_prec1=0.0):
     if os.path.isfile(path_to_model):
-        print("=> loading checkpoint '{}'".format(path_to_model))
+        #print("=> loading checkpoint '{}'".format(path_to_model))
         checkpoint = torch.load(path_to_model, map_location=lambda storage, loc: storage)
         model.load_state_dict(checkpoint['state_dict'])
-        print("=> loaded checkpoint '{}' (epoch {}), best_precision {}"
-              .format(path_to_model, checkpoint['epoch'], best_prec1))
+        #print("=> loaded checkpoint '{}' (epoch {}), best_precision {}"
+        #      .format(path_to_model, checkpoint['epoch'], best_prec1))
         return model
     else:
         print("=> no checkpoint found at '{}'".format(path_to_model))
@@ -251,17 +252,17 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
 
     time.sleep(10)  # Time interval can be increased
     saved_weights_list = [model]
-    print(saved_weights_list)
+    #print(saved_weights_list)
 
     # there are two different classifier types, use the model filename to delineate
     # which type e.g. 'surv_w11_xxx' will be a type 11 instead of type 18
 
-    print('model type:',model[14:17])
+    #print('model type:',model[14:17])
     if model[14:17] == 'w11':
-        print('found model type w11')
+        #print('found model type w11')
         model = W11_Classifier(num_classes, args.numgenes)
     elif model[14:17] == 'w18':
-        print('found model type w18')
+        #print('found model type w18')
         model = W18_Classifier(num_classes, args.numgenes)
     else:
         print("***************** error: could not find matching model type to load for file",model)
@@ -270,13 +271,13 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
     model = nn.DataParallel(model)
     model = model.cuda()
     model = load_best_model(model, saved_weights_list[-1], best_prec1)
-    print('Loading model is finished!!!!!!!')
+    #print('Loading model is finished!!!!!!!')
 
     #print('args were:',args)
     prediction = wsi_inferencing(model,image_file,segment_file,fold, totalFolds, args)
 
     # clear as much CUDA memory as possible
-    print('deleting model to free up memory')
+    #print('deleting model to free up memory')
     del model
     torch.cuda.empty_cache()
 
@@ -324,7 +325,7 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
     report_interval = 1
     report_count = 0
    
-    print('reading H&E image_file:',image_file)
+    #print('reading H&E image_file:',image_file)
     # read the image file
     wholeslide = op.OpenSlide(image_file)
     sizes = wholeslide.level_dimensions[0]
@@ -390,7 +391,7 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
             #print('After logits: ', logits)
 
             # try to free up GPU space between runs
-            print('freeing up memory')
+            #print('freeing up memory')
             del image_tensor
             del gene_tensor
             torch.cuda.empty_cache()
@@ -410,19 +411,19 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
         # this only runs the last time
         if k % (4000 // args.batch_size) == (4000 // args.batch_size - 1):
             sorted_medians = sortNumericList(medians)
-            print('Median Values: ', sorted_medians)
+            #print('Median Values: ', sorted_medians)
             local_medians = sorted_medians.numpy()
-            print('local medians',local_medians)
+            #print('local medians',local_medians)
             #medians[:] = 0.
             returnVal = {'secondBest':local_medians[-2],'mean':np.mean(local_medians)}
-            print('prediction:',returnVal)
+            #print('prediction:',returnVal)
 
     gc.collect()
     return returnVal
 
 
 def main():
-    print("Hello World!")
+    #print("Hello World!")
     results = performInferenceFunction(sys.argv[1],sys.argv[2],sys.argv[3])
     
 
