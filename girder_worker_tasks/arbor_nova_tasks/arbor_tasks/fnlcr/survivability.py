@@ -106,7 +106,7 @@ def start_remote_process(image_file,segmentation_mask,modelFilePath,foldCount,to
     #print('model file:',modelFilePath)
 
     print('spawning subprocess to run GPU')
-    outputText = subprocess.run(['/home/clisle/proj/nci/code/rms_infer_web/survive_shell.sh',image_file,segmentation_mask,modelFilePath],
+    outputText = subprocess.run(['/rms_infer_web/survive_shell.sh',image_file,segmentation_mask,modelFilePath],
                         stdout=subprocess.PIPE).stdout.decode('utf-8')
 
     #print('--------------------------')
