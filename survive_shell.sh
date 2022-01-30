@@ -7,5 +7,5 @@ source /rms_venv/bin/activate
 #echo "model is" $3 
 #echo python version is `python --version`
 #echo timm version is `pip freeze | grep timm`
-python /rms_infer_infer/survive_subprocess.py $1 $2 $3
+python /rms_infer_web/survive_subprocess.py $1 $2 $3
  
