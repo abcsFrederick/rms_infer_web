@@ -118,9 +118,9 @@ DEVICE = 'cuda'
 # directory instead
 
 if (os.getenv('DOCKER') == 'True') or (os.getenv('DOCKER') == 'True'):
-    WEIGHT_PATH = '/'
+    WEIGHT_PATH = './models/'
 else:
-    WEIGHT_PATH = '/'
+    WEIGHT_PATH = './models/'
 
 # these aren't used in the girder version, no files are directly written out 
 # by the routines written by FNLCR (Hyun Jung)
