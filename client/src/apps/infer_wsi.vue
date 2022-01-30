@@ -468,7 +468,7 @@ export default {
         console.log('load sample image')
         this.runCompleted = false;
         this.uploadInProgress = true;
-        this.imageFileName = 'SampleImageSegment'
+        this.imageFileName = 'Sample_WSI_Image.svs'
         const params = optionsToParameters({
               q: this.imageFileName,
               types: JSON.stringify(["file"])

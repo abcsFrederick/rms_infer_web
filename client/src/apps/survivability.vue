@@ -660,7 +660,7 @@ async uploadSegmentationFile(file) {
           console.log('load sample image')
           this.runCompleted = false;
           this.uploadInProgress = true;
-          this.imageFileName = 'SampleImageMYOD1_WSI'
+          this.imageFileName = 'Sample_WSI_Image.svs'
           const params = optionsToParameters({
                 q: this.imageFileName,
                 types: JSON.stringify(["file"])
@@ -679,7 +679,7 @@ async uploadSegmentationFile(file) {
 
           // now get the segmentation image to match the WSI
           this.segmentUploadInProgress = true
-          this.segmentFileName = 'SampleImageMYOD1_Segmentation'
+          this.segmentFileName = 'Sample_WSI_Segmentation.png'
           const params2 = optionsToParameters({
                 q: this.segmentFileName,
                 types: JSON.stringify(["file"])
