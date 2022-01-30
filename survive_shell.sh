@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source /home/clisle/proj/nci/code/rms_venv/bin/activate
+# initialize the python interpreter and stack for this method
+source /rms_venv/bin/activate
 #echo "image is" $1 
 #echo "segmentation is" $2 
 #echo "model is" $3 
