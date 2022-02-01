@@ -11,6 +11,9 @@ from billiard import Queue, Process
 import json
 import sys
 
+# for explicit memory management of large images
+import gc
+
 #-------------------------------------------
 
 @girder_job(title='inferWSI')
@@ -94,7 +97,8 @@ ST = 100
 ER = 150
 AR = 200
 PRINT_FREQ = 20
-BATCH_SIZE = 80
+# was 80 during testing; reduced to fit in M60 GPU for AWS
+BATCH_SIZE = 50
 
 ENCODER = 'efficientnet-b4'
 ENCODER_WEIGHTS = 'imagenet'
@@ -379,9 +383,11 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
                                                         scale={'magnification': THRESHOLD_MAGNIFICATION})
 
     print('OTSU image')
-    print(type(threshold_source_image))
     print(threshold_source_image.shape)
-
+ 
+    # strip off any extra alpha channel
+    threshold_source_image = threshold_source_image[:,:,0:3]
+    print(threshold_source_image.shape)
     thumbnail_gray = rgb2gray(threshold_source_image)
     val = filters.threshold_otsu(thumbnail_gray)
     # create empty output for threshold
@@ -477,6 +483,7 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
                 rawtile, mimetype = source.getRegion(format=large_image.tilesource.TILE_FORMAT_NUMPY,
                                                        region=myRegion, scale={'magnification': ANALYSIS_MAGNIFICATION},
                                                         fill="white",output={'maxWidth':IMAGE_SIZE,'maxHeight':IMAGE_SIZE})
+                # strip off any extra channels, RGB only
                 test_patch = rawtile[:,:,0:3]
                 # print out funny shaped patches... 
                 if (test_patch.shape[0] != IMAGE_SIZE) or (test_patch.shape[1] != IMAGE_SIZE):
@@ -549,20 +556,38 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
         #np.save('weight_sum.npy',weight_sum)
         prob_map_seg = np.true_divide(prob_map_seg, weight_sum)
         prob_map_valid = prob_map_seg[PATCH_OFFSET:PATCH_OFFSET + height, PATCH_OFFSET:PATCH_OFFSET + width, :]
+
+        # free main system memory since the images are big
+        del prob_map_seg
+        gc.collect()
+
         prob_map_valid = _unaugment(b, prob_map_valid)
         prob_map_seg_stack += prob_map_valid / num_tta
+
+        # free main system memory since the images are big
+        del prob_map_valid
+        gc.collect()
 
     pred_map_final = np.argmax(prob_map_seg_stack, axis=-1)
     #np.save('prob_map_seg_stack.npy', prob_map_seg_stack)
     pred_map_final_gray = pred_map_final.astype('uint8') * 50
+    del pred_map_final
+    gc.collect()
     pred_map_final_ones = [(pred_map_final_gray == v) for v in CLASS_VALUES]
+    del pred_map_final_gray
+    gc.collect()
     pred_map_final_stack = np.stack(pred_map_final_ones, axis=-1).astype('uint8')
+    del pred_map_final_ones
+    gc.collect()
+
     #np.save('pred_map_final_stack.npy', pred_map_final_stack)
     #prob_colormap = _gray_to_color(prob_map_seg_stack)
     #np.save('prob_colormap.npy', prob_colormap)
     #imsave(basename_string + '_prob.png', (prob_colormap * 255.0).astype('uint8'))
 
     pred_colormap = _gray_to_color(pred_map_final_stack)
+    del pred_map_final_stack
+    gc.collect()
 
     # for girder task, don't return this image, so commented out
     #imsave(basename_string + '_pred.tif', (pred_colormap * 255.0).astype('uint8'))

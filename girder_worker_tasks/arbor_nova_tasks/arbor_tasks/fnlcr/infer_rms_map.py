@@ -106,7 +106,9 @@ ST = 100
 ER = 150
 AR = 200
 PRINT_FREQ = 20
-BATCH_SIZE = 80
+
+# Batch size was 80 during testing; reduced to fit in 8GB M60 for AWS
+BATCH_SIZE = 50
 
 ENCODER = 'efficientnet-b4'
 ENCODER_WEIGHTS = 'imagenet'
@@ -423,6 +425,9 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
     print('OTSU image')
     print(type(threshold_source_image))
     print(threshold_source_image.shape)
+
+    # clamp away an alpha channel if one exists.  Some SVS images have them, some don't
+    threshold_source_image = threshold_source_image[:,:,0:3]
 
     thumbnail_gray = rgb2gray(threshold_source_image)
     val = filters.threshold_otsu(thumbnail_gray)
