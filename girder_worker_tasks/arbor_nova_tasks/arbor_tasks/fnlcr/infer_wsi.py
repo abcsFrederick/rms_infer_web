@@ -23,8 +23,10 @@ def infer_wsi(self,image_file,**kwargs):
     #print(" input image filename = {}".format(image_file))
 
     # setup the GPU environment for pytorch
-    os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    DEVICE = 'cuda'
+    #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+    #DEVICE = 'cuda'
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Using device:', DEVICE)
 
     print('perform forward inferencing')
 

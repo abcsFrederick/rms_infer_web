@@ -63,7 +63,7 @@ def performInferenceFunction(image_file,segment_file,model_file):
 
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    DEVICE = torch.device(f"cuda:0")
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     #print('perform forward inferencing - from subprocess')
 
 

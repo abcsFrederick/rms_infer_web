@@ -27,6 +27,8 @@
               @change="uploadImageFile($event.target.files[0])"
             >
           </v-flex>
+
+          <!--  (comment out because most users don't have a segmentation)
           <v-flex xs12>
             <v-btn class="text-none" outline block @click='$refs.segmentFile.click()'>{{ segmentFileName || '(optional) UPLOAD Segmentation Mask' }}</v-btn>
             <input
@@ -36,6 +38,9 @@
               @change="uploadSegmentationFile($event.target.files[0])"
             >
           </v-flex>
+          -->
+
+
           <v-flex xs12>
             <v-btn
               block
