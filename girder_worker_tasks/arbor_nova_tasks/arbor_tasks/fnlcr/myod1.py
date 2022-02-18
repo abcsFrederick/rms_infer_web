@@ -76,8 +76,8 @@ def myod1(self,image_file, segment_image_file,**kwargs):
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     #DEVICE = 'cuda'
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Using device:', DEVICE)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Using device:', device)
 
 
     print('perform forward inferencing')
@@ -229,7 +229,9 @@ def start_inferencing(image_file,segmentation_mask,modelFilePath,foldCount,total
     model = Classifier(num_classes)
     model.eval()
     model = nn.DataParallel(model)
-    model = model.cuda()
+    if (device == 'cuda'):
+        model = model.cuda()
+        
     model = load_best_model(model, weight_path, 0.)
     print('Loading model is finished!!!!!!!')
 

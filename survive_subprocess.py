@@ -63,7 +63,7 @@ def performInferenceFunction(image_file,segment_file,model_file):
 
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     #print('perform forward inferencing - from subprocess')
 
 
@@ -269,7 +269,9 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
 
     model.eval()
     model = nn.DataParallel(model)
-    model = model.cuda()
+    if (device == 'cuda'):
+        model = model.cuda()
+
     model = load_best_model(model, saved_weights_list[-1], best_prec1)
     #print('Loading model is finished!!!!!!!')
 

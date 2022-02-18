@@ -25,8 +25,8 @@ def infer_wsi(self,image_file,**kwargs):
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     #DEVICE = 'cuda'
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Using device:', DEVICE)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Using device:', device)
 
     print('perform forward inferencing')
 
@@ -707,7 +707,11 @@ def start_inference_mainthread(image_file):
     print('model created')
     model = nn.DataParallel(model)
     print('data parallel done')
-    model = model.cuda()
+    
+    # if acceleration is available
+    if (device='cuda'):
+        model = model.cuda()
+
     print('moved to gpu.  now load pretrained weights')
     model = load_best_model(model, saved_weights_list[-1], best_prec1_valid)
     print('Loading model is finished!!!!!!!')
