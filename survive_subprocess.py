@@ -64,6 +64,7 @@ def performInferenceFunction(image_file,segment_file,model_file):
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     #print('perform forward inferencing - from subprocess')
 
 
@@ -111,6 +112,7 @@ def reset_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if (DEVICE=='cuda'):
         torch.cuda.manual_seed(seed)
         torch.backends.cudnn.deterministic = True
@@ -126,6 +128,7 @@ def parse():
 
 def convert_to_tensor(batch):
     num_images = batch.shape[0]
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if (DEVICE=='cuda'):
         tensor = torch.zeros((num_images, 3, IMAGE_SIZE, IMAGE_SIZE), dtype=torch.uint8).cuda(non_blocking=True)
         mean = torch.tensor([0.0, 0.0, 0.0]).cuda().view(1, 3, 1, 1)
@@ -274,6 +277,7 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
 
     model.eval()
     model = nn.DataParallel(model)
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if (DEVICE == 'cuda'):
         model = model.cuda()
 
@@ -286,6 +290,7 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
     # clear as much CUDA memory as possible
     #print('deleting model to free up memory')
     del model
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if (DEVICE == 'cuda'):
         torch.cuda.empty_cache()
 
@@ -359,6 +364,7 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
 
         patch_index = 0
         image_batch = np.zeros((args.batch_size, IMAGE_SIZE, IMAGE_SIZE, 3), np.uint8)
+        DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if (DEVICE == 'cuda'):
             gene_batch = torch.zeros((args.batch_size, args.numgenes), dtype=torch.uint8).cuda(non_blocking=True)
         else:
@@ -405,6 +411,7 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
             #print('freeing up memory')
             del image_tensor
             del gene_tensor
+            DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
             if (DEVICE=='cuda'):
                 torch.cuda.empty_cache()
 

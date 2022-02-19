@@ -44,7 +44,7 @@ def survivability(self,image_file, segment_image_file,**kwargs):
     resultArray = []
     resultArraySecondBest = []
     resultArrayMean = []
-    models = glob.glob('./models/surv*')
+    models = glob.glob('/rms_infer_web/models/surv*')
     totalFolds = len(models)
     for fold,model in enumerate(models):
         print('**** running with model',model)

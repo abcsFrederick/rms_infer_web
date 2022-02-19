@@ -22,7 +22,7 @@ def cohort(
     else:
         print('unknown cohort')
 
-    path = './data'
+    path = '/rms_infer_web/data'
     print('reading data file')
     cohort_df = pd.read_csv(path+'/'+data_filename)
     print('reading complete')

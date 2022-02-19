@@ -490,6 +490,7 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
 
         linedup_predictions = np.zeros((heights * widths, IMAGE_SIZE, IMAGE_SIZE, num_classes), dtype=np.float32)
         linedup_predictions[:, :, :, 0] = 1.0
+        DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if (DEVICE == 'cuda'):
             test_patch_tensor = torch.zeros([BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE], dtype=torch.float).cuda(non_blocking=True)
         else:
@@ -577,6 +578,7 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
             linedup_predictions[inference_index[k], :, :, :] = batch_predictions[k, :, :, :]
 
         # finished with the model, clear the GPU
+        DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         if (DEVICE == 'cuda'):
             del test_patch_tensor
             del model
@@ -653,6 +655,7 @@ def reset_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if (DEVICE == 'cuda'):
         torch.cuda.manual_seed(seed)
         torch.backends.cudnn.deterministic = True
@@ -697,6 +700,7 @@ def start_inference(msg_queue, image_file):
     )
 
     model = nn.DataParallel(model)
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if (DEVICE == 'cuda'):
         model = model.cuda()
 
@@ -735,6 +739,7 @@ def start_inference_mainthread(image_file):
     print('model created')
     model = nn.DataParallel(model)
     print('data parallel done')
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     if (DEVICE == 'cuda'):
         model = model.cuda()
         print('moved to gpu.  now load pretrained weights')
