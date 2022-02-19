@@ -25,12 +25,10 @@ def infer_wsi(self,image_file,**kwargs):
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     #DEVICE = 'cuda'
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Using device:', device)
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print('Using DEVICE:', DEVICE)
 
     print('perform forward inferencing')
-
-
     subprocess = False
     if (subprocess):
         # declare a subprocess that does the GPU allocation to keep the GPU memory from leaking
@@ -105,7 +103,7 @@ BATCH_SIZE = 50
 ENCODER = 'efficientnet-b4'
 ENCODER_WEIGHTS = 'imagenet'
 ACTIVATION = None
-DEVICE = 'cuda'
+
 
 # the weights file is in the same directory, so make this path reflect that.  If this is 
 # running in a docker container, then we should assume the weights are at the toplevel 
@@ -451,8 +449,11 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
 
         linedup_predictions = np.zeros((heights * widths, IMAGE_SIZE, IMAGE_SIZE, num_classes), dtype=np.float32)
         linedup_predictions[:, :, :, 0] = 1.0
-        test_patch_tensor = torch.zeros([BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE], dtype=torch.float).cuda(
+        if (DEVICE == 'cuda'):
+            test_patch_tensor = torch.zeros([BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE], dtype=torch.float).cuda(
             non_blocking=True)
+        else:
+            test_patch_tensor = torch.zeros([BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE], dtype=torch.float)
 
         # get an identifier for the patch files to be written out as debugging
         unique_identifier = returnIdentifierFromImagePath(image_path)
@@ -537,10 +538,11 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
         for k in range(position):
             linedup_predictions[inference_index[k], :, :, :] = batch_predictions[k, :, :, :]
 
-        # finished with the model, clear the GPU
+        # finished with the model, clear the memory and GPU
         del test_patch_tensor
         del model
-        torch.cuda.empty_cache()
+        if (DEVICE == 'cuda'):
+            torch.cuda.empty_cache()
 
         print('GPU inferencing complete. Constructing out image from patches')
 
@@ -628,8 +630,9 @@ def reset_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
+    if (DEVICE == 'cuda'):
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
 
 def load_best_model(model, path_to_model, best_prec1=0.0):
     if os.path.isfile(path_to_model):
@@ -671,7 +674,8 @@ def start_inference(msg_queue, image_file):
     )
 
     model = nn.DataParallel(model)
-    model = model.cuda()
+    if (DEVICE=='cuda'):
+        model = model.cuda()
     print('load pretrained weights')
     model = load_best_model(model, saved_weights_list[-1], best_prec1_valid)
     print('Loading model is finished!!!!!!!')
@@ -707,9 +711,9 @@ def start_inference_mainthread(image_file):
     print('model created')
     model = nn.DataParallel(model)
     print('data parallel done')
-    
+
     # if acceleration is available
-    if (device='cuda'):
+    if (DEVICE=='cuda'):
         model = model.cuda()
 
     print('moved to gpu.  now load pretrained weights')
