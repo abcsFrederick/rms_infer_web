@@ -75,8 +75,8 @@ def myod1(self,image_file, segment_image_file,**kwargs):
 
     # setup the GPU environment for pytorch
     #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    #DEVICE = 'cuda'
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    DEVICE = 'cuda'
+    #DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
     print('perform forward inferencing')
@@ -134,10 +134,8 @@ def reset_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if (DEVICE=='cuda'):
-        torch.cuda.manual_seed(seed)
-        torch.backends.cudnn.deterministic = True
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
 
 
 # this code was adapted from a command line script that used argparse functionality to 
@@ -160,13 +158,8 @@ def parse():
 def convert_to_tensor(batch):
     num_images = batch.shape[0]
     tensor = torch.zeros((num_images, 3, IMAGE_SIZE, IMAGE_SIZE), dtype=torch.uint8).cuda(non_blocking=True)
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if (DEVICE=='cuda'):
-        mean = torch.tensor([0.0, 0.0, 0.0]).cuda().view(1, 3, 1, 1)
-        std = torch.tensor([255.0, 255.0, 255.0]).cuda().view(1, 3, 1, 1)
-    else:
-        mean = torch.tensor([0.0, 0.0, 0.0]).view(1, 3, 1, 1)
-        std = torch.tensor([255.0, 255.0, 255.0]).view(1, 3, 1, 1)
+    mean = torch.tensor([0.0, 0.0, 0.0]).cuda().view(1, 3, 1, 1)
+    std = torch.tensor([255.0, 255.0, 255.0]).cuda().view(1, 3, 1, 1)
 
     for i, img in enumerate(batch):
         nump_array = np.asarray(img, dtype=np.uint8)
@@ -234,9 +227,7 @@ def start_inferencing(image_file,segmentation_mask,modelFilePath,foldCount,total
     model = Classifier(num_classes)
     model.eval()
     model = nn.DataParallel(model)
-    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    if (DEVICE == 'cuda'):
-        model = model.cuda()
+    model = model.cuda()
 
     model = load_best_model(model, weight_path, 0.)
     print('Loading model is finished!!!!!!!')
