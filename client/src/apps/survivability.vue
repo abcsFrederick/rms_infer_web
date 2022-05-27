@@ -13,7 +13,7 @@
               block
                 @click="loadSampleImageFile"
               >
-              Use a Provided Sample Image
+              Use a Pre-Loaded Sample Image
               </v-btn>
             </v-flex>
           <v-flex xs12>
@@ -25,8 +25,7 @@
               @change="uploadImageFile($event.target.files[0])"
             >
           </v-flex>
-
-         <!-- (comment out because most users don't have a segmentation)
+      <!--
          <v-flex xs12>
             <v-btn class="text-none" outline block @click='$refs.segmentFile.click()'>{{ segmentFileName || '(optional) UPLOAD Segmentation Mask' }}</v-btn>
             <input
@@ -36,8 +35,7 @@
               @change="uploadSegmentationFile($event.target.files[0])"
             >
           </v-flex>
-          -->
-
+      -->
           <v-flex xs12>
             <v-btn
               block
@@ -216,7 +214,7 @@ export default {
   },
   computed: {
     readyToRun() {
-      return !!this.imageFileName && !this.running; 
+      return !!this.imageFileName && !this.running && this.inputDisplayed; 
     },
     readyToDownload() {
       return (this.runCompleted)
@@ -365,7 +363,6 @@ export default {
       //  `survivability?${params}`,
       //)).data;
 
-      // switch to the arbor nova version 
       this.job = (await this.girderRest.post(
         `arbor_nova/survivability?${params}`,
       )).data;

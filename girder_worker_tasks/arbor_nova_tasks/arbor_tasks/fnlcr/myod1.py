@@ -54,6 +54,8 @@ PRINT_FREQ = 20
 class_names = ['Neg', 'Pos']
 num_classes = len(class_names)
 
+USE_GPU = False
+
 ## MYOD1 heatmap will be saved in the inference_path folder
 #inference_output = './For_Curtis/Inferenced/'
 
@@ -70,16 +72,33 @@ num_classes = len(class_names)
 @girder_job(title='myod1')
 @app.task(bind=True)
 def myod1(self,image_file, segment_image_file,**kwargs):
+    global USE_GPU
 
     print(" input image filename = {}".format(image_file))
 
     # setup the GPU environment for pytorch
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    DEVICE = 'cuda'
-    #DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    gpu_count = torch.cuda.device_count()
+    print('found ',gpu_count,'existing CUDA devices')
+    if torch.cuda.is_available():
+        print('cuda is available')
+    else:
+        print('cuda is not available')
+    if  (gpu_count>0):
+        # we have GPUs, let us build a string that contains all GPUs for CUDA
+        # print('Using GPUs. To disable GPU use, set environment variable USE_GPU=0')
+        # gpus_to_use = ''
+        # for index in range(gpu_count):
+        #     gpus_to_use += str(index) if (index+1 == gpu_count) else (str(index)+',')
+        # os.environ['CUDA_VISIBLE_DEVICES'] = gpus_to_use
+        USE_GPU = True
+        device = 'gpu'
+    else:
+        print('selecting use of cpu for inferencing')
+        # we are not using GPUs, clear this string so torch uses CPUs
+        USE_GPU = False
+        device = 'cpu'
 
-
-    print('perform forward inferencing')
+    print('perform forward inferencing using device:',device)
 
     # set the UI to 0% progress initially. stdout is parsed by the ui
     print(f'progress: {0}')
@@ -134,8 +153,9 @@ def reset_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
 
 
 # this code was adapted from a command line script that used argparse functionality to 
@@ -157,9 +177,13 @@ def parse():
 
 def convert_to_tensor(batch):
     num_images = batch.shape[0]
-    tensor = torch.zeros((num_images, 3, IMAGE_SIZE, IMAGE_SIZE), dtype=torch.uint8).cuda(non_blocking=True)
-    mean = torch.tensor([0.0, 0.0, 0.0]).cuda().view(1, 3, 1, 1)
-    std = torch.tensor([255.0, 255.0, 255.0]).cuda().view(1, 3, 1, 1)
+    tensor = torch.zeros((num_images, 3, IMAGE_SIZE, IMAGE_SIZE), dtype=torch.uint8)
+    mean = torch.tensor([0.0, 0.0, 0.0]).view(1, 3, 1, 1)
+    std = torch.tensor([255.0, 255.0, 255.0]).view(1, 3, 1, 1)
+    if torch.cuda.is_available():
+        tensor = tensor.cuda(non_blocking=True)
+        mean = mean.cuda()
+        std = std.cuda()
 
     for i, img in enumerate(batch):
         nump_array = np.asarray(img, dtype=np.uint8)
@@ -227,7 +251,9 @@ def start_inferencing(image_file,segmentation_mask,modelFilePath,foldCount,total
     model = Classifier(num_classes)
     model.eval()
     model = nn.DataParallel(model)
-    model = model.cuda()
+    if torch.cuda.is_available():
+        model = model.cuda()
+        print('moving model to GPU')
 
     model = load_best_model(model, weight_path, 0.)
     print('Loading model is finished!!!!!!!')

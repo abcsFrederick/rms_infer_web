@@ -24,21 +24,34 @@ from billiard import Queue, Process
 import json
 import sys
 
+USE_GPU = False
+
 #-------------------------------------------
 
 @girder_job(title='inferRMSmap')
 @app.task(bind=True)
 def infer_rms_map(self,image_file,**kwargs):
+    global USE_GPU
 
     #print(" input image filename = {}".format(image_file))
 
     # setup the GPU environment for pytorch
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    #DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    DEVICE = 'cuda'
-    print('selected device:',DEVICE)
+    gpu_count = torch.cuda.device_count()
+    print('found ',gpu_count,'existing CUDA devices')
+    if torch.cuda.is_available():
+        print('cuda is available')
+    else:
+        print('cuda is not available')
+    if  (gpu_count>0):
+        USE_GPU = True
+        device = 'gpu'
+    else:
+        print('selecting use of cpu for inferencing')
+        # we are not using GPUs, clear this string so torch uses CPUs
+        USE_GPU = False
+        device = 'cpu'
 
-    print('perform forward inferencing')
+    print('perform forward inferencing using device:',device)
 
 
     subprocess = False
@@ -491,7 +504,9 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
 
         linedup_predictions = np.zeros((heights * widths, IMAGE_SIZE, IMAGE_SIZE, num_classes), dtype=np.float32)
         linedup_predictions[:, :, :, 0] = 1.0
-        test_patch_tensor = torch.zeros([BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE], dtype=torch.float).cuda(non_blocking=True)
+        test_patch_tensor = torch.zeros([BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE], dtype=torch.float)
+        if torch.cuda.is_available():
+            test_patch_tensor = test_patch_tensor.cuda(non_blocking=True)
  
         # get an identifier for the patch files to be written out as debugging
         unique_identifier = returnIdentifierFromImagePath(image_path)
@@ -577,7 +592,8 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
         # finished with the model, clear the GPU
         del test_patch_tensor
         del model
-        torch.cuda.empty_cache()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
         print('GPU inferencing complete. Constructing out image from patches')
 
@@ -650,8 +666,9 @@ def reset_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
 
 def load_best_model(model, path_to_model, best_prec1=0.0):
     if os.path.isfile(path_to_model):
@@ -693,7 +710,8 @@ def start_inference(msg_queue, image_file):
     )
 
     model = nn.DataParallel(model)
-    model = model.cuda()
+    if torch.cuda.is_available():
+        model = model.cuda()
 
     print('load pretrained weights')
     model = load_best_model(model, saved_weights_list[-1], best_prec1_valid)
@@ -730,9 +748,11 @@ def start_inference_mainthread(image_file):
     print('model created')
     model = nn.DataParallel(model)
     print('data parallel done')
-    model = model.cuda()
-    print('moved to gpu.  now load pretrained weights')
-        
+    if torch.cuda.is_available():
+        model = model.cuda()
+        print('moved to gpu.')
+
+    print('now load pretrained weights')        
     model = load_best_model(model, saved_weights_list[-1], best_prec1_valid)
     print('Loading model is finished!!!!!!!')
 

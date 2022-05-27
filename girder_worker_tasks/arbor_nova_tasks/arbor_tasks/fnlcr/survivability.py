@@ -35,6 +35,7 @@ def survivability(self,image_file, segment_image_file,**kwargs):
     print('running ensemble survivability model')
     #print(" input image filename = {}".format(image_file))
 
+    print('using',os.environ.get('CUDA_VISIBLE_DEVICES'),'CUDA devices available')
 
     # set the UI to 0% progress initially. stdout is parsed by the ui
     print(f'progress: {0}')
@@ -105,7 +106,7 @@ def start_remote_process(image_file,segmentation_mask,modelFilePath,foldCount,to
     #print('segment:',segmentation_mask)
     #print('model file:',modelFilePath)
 
-    print('spawning subprocess to run GPU')
+    print('spawning subprocess to run inference')
     outputText = subprocess.run(['/rms_infer_web/survive_shell.sh',image_file,segmentation_mask,modelFilePath],
                         stdout=subprocess.PIPE).stdout.decode('utf-8')
 

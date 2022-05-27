@@ -14,7 +14,7 @@
               block
                 @click="loadSampleImageFile"
               >
-              Use a Provided Sample Image
+              Use a Pre-Loaded Sample Image
               </v-btn>
             </v-flex>
 
@@ -480,8 +480,8 @@ export default {
 
         console.log('displaying sample input stored at girder ID:',this.fileId);
         this.imageFile = this.fileId
-        this.inputDisplayed == false;
         this.uploadInProgress = false;
+        this.inputDisplayed == false;
         this.readyToDisplayInput = true;
         this.renderInputImage();
         },

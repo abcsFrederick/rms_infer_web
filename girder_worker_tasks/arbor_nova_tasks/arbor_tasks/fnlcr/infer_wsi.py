@@ -10,28 +10,51 @@ import billiard as multiprocessing
 from billiard import Queue, Process
 import json
 import sys
+import os
 
 # for explicit memory management of large images
 import gc
 
+# define global variable that is set according to whether GPUs are discovered
+USE_GPU = True
 
+import torch
 
 #-------------------------------------------
 
 @girder_job(title='inferWSI')
 @app.task(bind=True)
 def infer_wsi(self,image_file,**kwargs):
+    global USE_GPU
+ 
 
     #print(" input image filename = {}".format(image_file))
 
     # setup the GPU environment for pytorch
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    DEVICE = 'cuda'
-    #DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print('Using DEVICE:', DEVICE)
+    gpu_count = torch.cuda.device_count()
+    print('found ',gpu_count,'existing CUDA devices')
+    if torch.cuda.is_available():
+        print('cuda is available')
+    else:
+        print('cuda is not available')
+    if  (gpu_count>0):
+        # we have GPUs, let us build a string that contains all GPUs for CUDA
+        print('Using GPUs. To disable GPU use, set environment variable USE_GPU=0')
+        #gpus_to_use = ''
+        #for index in range(gpu_count):
+        #    gpus_to_use += str(index) if (index+1 == gpu_count) else (str(index)+',')
+        #os.environ['CUDA_VISIBLE_DEVICES'] = gpus_to_use
+        #device = torch.device('cuda')
+        USE_GPU = True
+        device = 'gpu'
+    else:
+        print('selecting use of cpu for inferencing')
+        # we are not using GPUs, clear this string so torch uses CPUs
+        #os.environ['CUDA_VISIBLE_DEVICES'] = ''
+        USE_GPU = False
+        device = 'cpu'
+    print('perform forward inferencing using device:',device)
 
-
-    print('perform forward inferencing')
     subprocess = False
     if (subprocess):
         # declare a subprocess that does the GPU allocation to keep the GPU memory from leaking
@@ -69,7 +92,7 @@ def infer_wsi(self,image_file,**kwargs):
 
 import random
 #import argparse
-import torch
+
 import torch.nn as nn
 import cv2
 
@@ -198,8 +221,10 @@ def _infer_batch(model, test_patch):
         logits_all = model(test_patch[:, :, :, :])
         logits = logits_all[:, 0:NUM_CLASSES, :, :]
     prob_classes_int = ml(logits)
-    prob_classes_all = prob_classes_int.cpu().numpy().transpose(0, 2, 3, 1)
-
+    if USE_GPU:
+        prob_classes_all = prob_classes_int.cpu().numpy().transpose(0, 2, 3, 1)
+    else:
+        prob_classes_all = prob_classes_int.numpy().transpose(0, 2, 3, 1)
     return prob_classes_all
 
 def _augment(index, image):
@@ -453,8 +478,9 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
         linedup_predictions = np.zeros((heights * widths, IMAGE_SIZE, IMAGE_SIZE, num_classes), dtype=np.float32)
         linedup_predictions[:, :, :, 0] = 1.0
 
-        test_patch_tensor = torch.zeros([BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE], dtype=torch.float).cuda(
-        non_blocking=True)
+        test_patch_tensor = torch.zeros([BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE], dtype=torch.float)
+        if USE_GPU:
+            test_path_tensor = test_patch_tensor.cuda(non_blocking=True)
      
         # get an identifier for the patch files to be written out as debugging
         unique_identifier = returnIdentifierFromImagePath(image_path)
@@ -542,9 +568,10 @@ def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
         # finished with the model, clear the memory and GPU
         del test_patch_tensor
         del model
-        torch.cuda.empty_cache()
+        if USE_GPU:
+            torch.cuda.empty_cache()
 
-        print('GPU inferencing complete. Constructing out image from patches')
+        print('Inferencing complete. Constructing out image from patches')
 
         patch_iter = 0
         for i in range(heights-1 ):
@@ -630,8 +657,9 @@ def reset_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
+    if USE_GPU:
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
 
 def load_best_model(model, path_to_model, best_prec1=0.0):
     if os.path.isfile(path_to_model):
@@ -672,8 +700,10 @@ def start_inference(msg_queue, image_file):
         aux_params=None,
     )
 
-    model = nn.DataParallel(model)
-    model = model.cuda()
+    
+    if USE_GPU:
+        model = nn.DataParallel(model)
+        model = model.cuda()
     print('load pretrained weights')
     model = load_best_model(model, saved_weights_list[-1], best_prec1_valid)
     print('Loading model is finished!!!!!!!')
@@ -696,7 +726,7 @@ def start_inference_mainthread(image_file):
     saved_weights_list = [WEIGHT_PATH+'model_iou_0.4996_0.5897_epoch_45.pth.tar'] 
     print(saved_weights_list)
 
-    print('about to instantiate model on GPU')
+    print('about to instantiate model')
     # create segmentation model with pretrained encoder
     model = smp.Unet(
         encoder_name=ENCODER,
@@ -711,9 +741,11 @@ def start_inference_mainthread(image_file):
     print('data parallel done')
 
     # if acceleration is available
-    model = model.cuda()
+    if USE_GPU:
+        model = model.cuda()
+        print('model moved to GPU.') 
 
-    print('moved to gpu.  now load pretrained weights')
+    print('now load pretrained weights')
     model = load_best_model(model, saved_weights_list[-1], best_prec1_valid)
     print('Loading model is finished!!!!!!!')
 

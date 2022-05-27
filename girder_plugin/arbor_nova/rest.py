@@ -14,6 +14,7 @@ from girder.api import access
 from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import filtermodel, Resource
 from girder_worker_utils.transforms.girder_io import GirderFileId, GirderUploadToItem
+from girder_worker_utils.transforms.contrib.girder_io import GirderFileIdAllowDirect
 
 
 class ArborNova(Resource):
@@ -51,7 +52,8 @@ class ArborNova(Resource):
             statsId
     ):
         result = infer_rhabdo.delay(
-                GirderFileId(imageId), 
+                #GirderFileId(imageId), 
+                GirderFileIdAllowDirect(imageId), 
                 girder_result_hooks=[
                     GirderUploadToItem(outputId),
                     GirderUploadToItem(statsId),
@@ -78,7 +80,8 @@ class ArborNova(Resource):
             statsId
     ):
         result = infer_wsi.delay(
-                GirderFileId(imageId), 
+                #GirderFileId(imageId), 
+                GirderFileIdAllowDirect(imageId), 
                 girder_result_hooks=[
                     GirderUploadToItem(outputId),
                     GirderUploadToItem(statsId),
@@ -106,7 +109,8 @@ class ArborNova(Resource):
             statsId
     ):
         result = infer_rms_map.delay(
-                GirderFileId(imageId), 
+                #GirderFileId(imageId), 
+                GirderFileIdAllowDirect(imageId),               
                 girder_result_hooks=[
                     GirderUploadToItem(outputId),
                     GirderUploadToItem(statsId),
@@ -133,7 +137,8 @@ class ArborNova(Resource):
             outputId
     ):
         result = wsi_thumbnail.delay(
-                GirderFileId(imageId), 
+                #GirderFileId(imageId), 
+                GirderFileIdAllowDirect(imageId), 
                 girder_result_hooks=[
                     GirderUploadToItem(outputId)
                 ])
@@ -159,8 +164,10 @@ class ArborNova(Resource):
             statsId
     ):
         result = myod1.delay(
-                GirderFileId(imageId), 
-                GirderFileId(segmentId), 
+                #GirderFileId(imageId), 
+                GirderFileIdAllowDirect(imageId), 
+                #GirderFileId(segmentId), 
+                GirderFileIdAllowDirect(segmentId), 
                 girder_result_hooks=[
                     GirderUploadToItem(statsId),
                 ])
@@ -186,8 +193,10 @@ class ArborNova(Resource):
             statsId
     ):
         result = survivability.delay(
-                GirderFileId(imageId), 
-                GirderFileId(segmentId), 
+                #GirderFileId(imageId), 
+                GirderFileIdAllowDirect(imageId), 
+                #GirderFileId(segmentId), 
+                GirderFileIdAllowDirect(segmentId), 
                 girder_result_hooks=[
                     GirderUploadToItem(statsId),
                 ])

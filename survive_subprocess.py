@@ -10,6 +10,8 @@ import math
 # needed to copy imagery from girder to files for endpoint access
 import girder_client
 
+#from girder_worker_tasks.arbor_nova_tasks.arbor_tasks.fnlcr.infer_rms_map import infer_rms_map
+
 #-------------------------------------------
 
 import torch
@@ -52,21 +54,35 @@ client = None
 log_collection = None
 
 #
-
+USE_GPU = True
 
 def performInferenceFunction(image_file,segment_file,model_file):   
+    global USE_GPU
     
     #print('performInference image_file',image_file)
     #print('performInference segment_file',segment_file)
     #print('performInference model_file',model_file)
 
-
     # setup the GPU environment for pytorch
-    #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-    #DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    DEVICE = 'cuda'
+    gpu_count = torch.cuda.device_count()
+    if  (gpu_count>0):
+        # we have GPUs, let us build a string that contains all GPUs for CUDA
+        #print('Using GPUs. To disable GPU use, set environment variable USE_GPU=0')
+        #gpus_to_use = ''
+        #for index in range(gpu_count):
+        #    gpus_to_use += str(index) if (index+1 == gpu_count) else (str(index)+',')
+        #os.environ['CUDA_VISIBLE_DEVICES'] = gpus_to_use
+        #device = torch.device('cuda')
+        USE_GPU = True
+        device = 'gpu'
+    else:
+        #print('selecting use of cpu for inferencing')
+        # we are not using GPUs, clear this string so torch uses CPUs
+        #os.environ['CUDA_VISIBLE_DEVICES'] = ''
+        USE_GPU = False
+        device = 'cpu'
+    #print('perform forward inferencing using device:',device)
 
-    #print('perform forward inferencing - from subprocess')
 
 
     # run a single model and update the job progress after each one completes
@@ -113,8 +129,9 @@ def reset_seed(seed):
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
 
 
 def parse():
@@ -127,9 +144,14 @@ def parse():
 
 def convert_to_tensor(batch):
     num_images = batch.shape[0]
-    tensor = torch.zeros((num_images, 3, IMAGE_SIZE, IMAGE_SIZE), dtype=torch.uint8).cuda(non_blocking=True)
-    mean = torch.tensor([0.0, 0.0, 0.0]).cuda().view(1, 3, 1, 1)
-    std = torch.tensor([255.0, 255.0, 255.0]).cuda().view(1, 3, 1, 1)
+    tensor = torch.zeros((num_images, 3, IMAGE_SIZE, IMAGE_SIZE), dtype=torch.uint8)
+    mean = torch.tensor([0.0, 0.0, 0.0]).view(1, 3, 1, 1)
+    std = torch.tensor([255.0, 255.0, 255.0]).view(1, 3, 1, 1)
+
+    if torch.cuda.is_available():
+        tensor = tensor.cuda(non_blocking=True)
+        mean = mean.cuda()
+        std = std.cuda()
 
     for i, img in enumerate(batch):
         nump_array = np.asarray(img, dtype=np.uint8)
@@ -272,7 +294,8 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
 
     model.eval()
     model = nn.DataParallel(model)
-    model = model.cuda()
+    if torch.cuda.is_available():
+        model = model.cuda()
 
     model = load_best_model(model, saved_weights_list[-1], best_prec1)
     #print('Loading model is finished!!!!!!!')
@@ -281,9 +304,9 @@ def survival_inferencing(image_file,segment_file,model,fold,totalFolds):
     prediction = wsi_inferencing(model,image_file,segment_file,fold, totalFolds, args)
 
     # clear as much CUDA memory as possible
-    #print('deleting model to free up memory')
     del model
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     return prediction
 
 # sort python list of numbers in numeric order
@@ -354,8 +377,9 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
 
         patch_index = 0
         image_batch = np.zeros((args.batch_size, IMAGE_SIZE, IMAGE_SIZE, 3), np.uint8)
-        gene_batch = torch.zeros((args.batch_size, args.numgenes), dtype=torch.uint8).cuda(non_blocking=True)
-       
+        gene_batch = torch.zeros((args.batch_size, args.numgenes), dtype=torch.uint8)
+        if torch.cuda.is_available():
+            gene_batch = gene_batch.cuda(non_blocking=True)
 
         for j in range(args.batch_size):
             picked = False
@@ -398,7 +422,8 @@ def wsi_inferencing(model, image_file, segment_file, fold, totalFolds, args):
             #print('freeing up memory')
             del image_tensor
             del gene_tensor
-            torch.cuda.empty_cache()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
         median_index = k % (4000 // args.batch_size)
         medians[median_index] = logits[args.batch_size // 2, 0]
