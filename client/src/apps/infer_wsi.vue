@@ -14,7 +14,7 @@
               block
                 @click="loadSampleImageFile"
               >
-              Use a Provided Sample Image
+              Use a Pre-Loaded Sample Image
               </v-btn>
             </v-flex>
 
@@ -468,7 +468,7 @@ export default {
         console.log('load sample image')
         this.runCompleted = false;
         this.uploadInProgress = true;
-        this.imageFileName = 'SampleImageSegment'
+        this.imageFileName = 'Sample_WSI_Image.svs'
         const params = optionsToParameters({
               q: this.imageFileName,
               types: JSON.stringify(["file"])
@@ -480,6 +480,7 @@ export default {
 
         console.log('displaying sample input stored at girder ID:',this.fileId);
         this.imageFile = this.fileId
+        this.uploadInProgress = false;
         this.inputDisplayed == false;
         this.readyToDisplayInput = true;
         this.renderInputImage();

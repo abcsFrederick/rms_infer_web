@@ -14,7 +14,7 @@
               block
                 @click="loadSampleImageFile"
               >
-              Use a Provided Sample Image
+              Use a Pre-Loaded Sample Image
               </v-btn>
             </v-flex>
 
@@ -27,6 +27,8 @@
               @change="uploadImageFile($event.target.files[0])"
             >
           </v-flex>
+
+      <!--    
           <v-flex xs12>
             <v-btn class="text-none" outline block @click='$refs.segmentFile.click()'>{{ segmentFileName || '(optional) UPLOAD Segmentation Mask' }}</v-btn>
             <input
@@ -36,6 +38,7 @@
               @change="uploadSegmentationFile($event.target.files[0])"
             >
           </v-flex>
+      -->
           <v-flex xs12>
             <v-btn
               block
@@ -632,7 +635,7 @@ export default {
           console.log('load sample image')
           this.runCompleted = false;
           this.uploadInProgress = true;
-          this.imageFileName = 'SampleImageMYOD1_WSI'
+          this.imageFileName = 'Sample_WSI_Image.svs'
           const params = optionsToParameters({
                 q: this.imageFileName,
                 types: JSON.stringify(["file"])
@@ -650,7 +653,7 @@ export default {
 
           // now get the segmentation image to match the WSI
           this.segmentUploadInProgress = true
-          this.segmentFileName = 'SampleImageMYOD1_Segmentation'
+          this.segmentFileName = 'Sample_WSI_Segmentation.png'
           const params2 = optionsToParameters({
                 q: this.segmentFileName,
                 types: JSON.stringify(["file"])

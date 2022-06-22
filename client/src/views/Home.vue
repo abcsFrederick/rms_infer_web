@@ -21,7 +21,9 @@
             intended for research purposes only.  This system has
             not been reviewed and approved by the Food and Drug
             Administration or any other US Federal agency for use
-            in clinical applications. 
+            in clinical applications.  The contained models are trained only on 
+            Rhabdomyosarcoma tissue.  Testing images from any other disease
+            is not supported and will not yield reliable results. 
           </v-card-text>
   
           <v-divider></v-divider>
@@ -31,7 +33,7 @@
             <v-btn
               color="primary"
               text
-              @click="dialog = false"
+              @click="autoLogin"
             >
               I accept
             </v-btn>
@@ -280,6 +282,14 @@ asyncComputed: {
 
 methods: {
 
+autoLogin() {
+  // close the announcement 
+  this.dialog = false
+  this.attemptedUserName = 'anonymous'
+  this.attemptedUserPassword = 'letmein'
+  // automatically log into girder so the apps are available
+  this.loginFromGirderComponents( this.attemptedUserName,this.attemptedUserPassword)
+  },
 
  // when the user clicks the button to login, open the login dialog
 

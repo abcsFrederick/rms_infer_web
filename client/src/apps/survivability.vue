@@ -13,7 +13,7 @@
               block
                 @click="loadSampleImageFile"
               >
-              Use a Provided Sample Image
+              Use a Pre-Loaded Sample Image
               </v-btn>
             </v-flex>
           <v-flex xs12>
@@ -25,6 +25,7 @@
               @change="uploadImageFile($event.target.files[0])"
             >
           </v-flex>
+      <!--
          <v-flex xs12>
             <v-btn class="text-none" outline block @click='$refs.segmentFile.click()'>{{ segmentFileName || '(optional) UPLOAD Segmentation Mask' }}</v-btn>
             <input
@@ -34,7 +35,7 @@
               @change="uploadSegmentationFile($event.target.files[0])"
             >
           </v-flex>
-
+      -->
           <v-flex xs12>
             <v-btn
               block
@@ -213,7 +214,7 @@ export default {
   },
   computed: {
     readyToRun() {
-      return !!this.imageFileName && !this.running; 
+      return !!this.imageFileName && !this.running && this.inputDisplayed; 
     },
     readyToDownload() {
       return (this.runCompleted)
@@ -353,12 +354,17 @@ export default {
         imageId: this.imageFile._id,
         segmentFileName: this.segmentFileName,
         segmentId: this.segmentFile._id,
+        statsId: outputItem._id
       });
       // start the job by passing parameters to the REST call
       this.running = true;
       console.log('starting backend inferencing with params',params)
+      //this.job = (await this.girderRest.post(
+      //  `survivability?${params}`,
+      //)).data;
+
       this.job = (await this.girderRest.post(
-        `survivability?${params}`,
+        `arbor_nova/survivability?${params}`,
       )).data;
 
       // wait for the job to finish and then download the cohort table
@@ -373,9 +379,10 @@ export default {
 
         this.running = false;
         this.runCompleted = true;
-        this.stats = this.extractStatsFromJobLog(this.job)
+        this.result = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'text'})).data;
+        this.stats = this.result
+        //this.stats = this.extractStatsFromJobLog(this.job)
         console.log('stats:',this.stats)
-        //this.stats = JSON.parse(this.stats)
         
         // now fetch the cohort that we need to compare against from girder storage.  This way the cohort
         // can be updated by changing the girder contents instead of hard-coding the web app.
@@ -653,7 +660,7 @@ async uploadSegmentationFile(file) {
           console.log('load sample image')
           this.runCompleted = false;
           this.uploadInProgress = true;
-          this.imageFileName = 'SampleImageMYOD1_WSI'
+          this.imageFileName = 'Sample_WSI_Image.svs'
           const params = optionsToParameters({
                 q: this.imageFileName,
                 types: JSON.stringify(["file"])
@@ -672,7 +679,7 @@ async uploadSegmentationFile(file) {
 
           // now get the segmentation image to match the WSI
           this.segmentUploadInProgress = true
-          this.segmentFileName = 'SampleImageMYOD1_Segmentation'
+          this.segmentFileName = 'Sample_WSI_Segmentation.png'
           const params2 = optionsToParameters({
                 q: this.segmentFileName,
                 types: JSON.stringify(["file"])
