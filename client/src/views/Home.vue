@@ -211,8 +211,6 @@ export default {
     cilogonText: 'Login with Google Account here',
     loginText: 'Please login here',
     samples: [
-
-
      {   
        label: 'Whole Slide RMS Segmentation',
        image: require('../assets/RMS-WSI-segmentation.png'),
