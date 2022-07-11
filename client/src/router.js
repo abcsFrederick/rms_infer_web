@@ -35,6 +35,10 @@ export default new Router({
       name: 'infer_wsi',
       component: infer_wsi,
     },
-
+    {
+      path: '/instructions',
+      name: 'instructions',
+      component: instructions,
+    },
   ]
 })

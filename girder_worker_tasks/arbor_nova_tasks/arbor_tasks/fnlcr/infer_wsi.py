@@ -39,7 +39,7 @@ def infer_wsi(self,image_file,**kwargs):
         print('cuda is not available')
     if  (gpu_count>0):
         # we have GPUs, let us build a string that contains all GPUs for CUDA
-        print('Using GPUs. To disable GPU use, set environment variable USE_GPU=0')
+        print('Using GPUs. To disable GPU use, set environment variable CUDA_AVAILABLE_DEVICES to an empty string')
         #gpus_to_use = ''
         #for index in range(gpu_count):
         #    gpus_to_use += str(index) if (index+1 == gpu_count) else (str(index)+',')

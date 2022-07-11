@@ -28,17 +28,27 @@ REPORTING_INTERVAL = 10
 IMAGE_SIZE = 224
 PRINT_FREQ = 20
 
+# define global variable that is set according to whether GPUs are discovered
+USE_GPU = True
+
 
 @girder_job(title='survivability')
 @app.task(bind=True)
 def survivability(self,image_file, segment_image_file,**kwargs):
+    global USE_GPU
     print('running ensemble survivability model')
     #print(" input image filename = {}".format(image_file))
 
-    print('using',os.environ.get('CUDA_VISIBLE_DEVICES'),'CUDA devices available')
+    gpu_count = torch.cuda.device_count()
+    if torch.cuda.is_available():
+        print('cuda is available')
+        print('using',gpu_count,'CUDA devices available')
+    else:
+        print('cuda is not available')
 
     # set the UI to 0% progress initially. stdout is parsed by the ui
-    print(f'progress: {0}')
+    print(f'progress: {2.5}')
+    print(f'progress: {5}')
 
     # find and run all models in the models directory. Return the average value of the models
     # as the final result
@@ -56,6 +66,7 @@ def survivability(self,image_file, segment_image_file,**kwargs):
         #resultArray.append(predict_values)
         progressPercent = round((fold+1)/totalFolds*100,2)
         print(f'progress: {progressPercent}')
+        print(f'progress: {progressPercent+1}')
     print('completed all folds')
 
  
