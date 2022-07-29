@@ -3,7 +3,7 @@
     <v-layout class="transform-view" row fill-height>
       <v-navigation-drawer permanent fixed style="width: 400px; min-width: 400px;">
         <v-toolbar dark flat color="primary">
-          <v-toolbar-title class="white--text">Whole Slide RMS Segmentation</v-toolbar-title>
+          <v-toolbar-title class="white--text">Instructions for this Tool</v-toolbar-title>
         </v-toolbar>
         <v-spacer/>
         <v-container fluid>
@@ -12,11 +12,15 @@
       <v-layout column justify-start fill-height style="margin-left: 400px">
           <v-card class="ma-4">
             <v-card-text>
-              <b>This applications provides access to several Rhabdomyosarcoma models through a web interface.  This application 
-                can be installed natively on a physical or virtual machine.  The application is also available as a downloadable docker
+              <b>This interactive web tool provides access to several pre-trained Rhabdomyosarcoma models 
+                through a web interface.  This application can be installed natively on a physical
+                or virtual machine.  The application is also available as a downloadable docker
                 container.  
               <br><br>
-    Each app has its own panel and instructions.  Below you will find demonstration videos about each of the RMS applications included in this system.  
+    This web interface is organized as several mini-applications: (instructions, segmentation, MYOD1 mutation, and survivability),
+     each of which has its own panel and instructions.  Below you will find demonstration videos 
+     about each of the RMS mini-applications included in this system.  To get back to the main interface anytime, 
+     just click the browser's back button. 
               <br><br>
 		We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
 		</b>
@@ -34,56 +38,86 @@
           </div>
 
         <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
-  	       <v-card v-if="inputReadyForDisplay" class="mb-4 ml-4 mr-4">
-            <v-card-text>Uploaded Image</v-card-text>
-               <img :src="inputImageUrl" style="display: block; margin: auto"> 
-            </v-card>
-        </div>
-
-        <v-card v-if="running && job.status==0" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-            Another user is currently using the system.  Please wait.  Your inferencing job should begin automatically when the previous job completes. 
-            <v-progress-linear indeterminate=True></v-progress-linear>
-        </v-card>
-        <v-card v-if="running && job.status == 2" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-            Running the Segmentation Neural Network.  Please wait for the output image to show below. 
-            This will take several minutes.  
-          <v-progress-linear :value="progress"></v-progress-linear>
-        </v-card>
-
-        <div v-if="runCompleted" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-          Job Complete  ... 
-        </div>
-        <code v-if="!running && job.status === 4" class="mb-4 ml-4 mr-4" style="width: 100%">{{ job.log.join('\n') }}</code> 
-
-        <div v-show="runCompleted && job.status == 3">
-  	     <v-card class="mb-4 ml-4 mr-4">
-            <v-card-text>Segmentation Image</v-card-text>
-		          {{ renderOutputImage(outputImageUrl) }} 
-          </v-card>
-
-          <v-card class="mb-4 ml-4 mr-4">  
-           <div ref="outputImageDiv" id ="openseadragon2" style="width:1000px;height:800px; margin: auto;"> </div>
-          </v-card>
-
-          <v-card  align="center" justify="center" class="mt-20 mb-4 ml-4 mr-4">
-
+  	       <v-card class="mb-4 ml-4 mr-4">
             <v-card-text>
-              <b>Below is a chart showing the percentages of ARMS, ERMS, Stroma, and Necrosis in the WSI as predicted
-            by our segmentation algorithm.  Click the elipsis icon at the top right to save a copy of the chart
-            to your local system
-              </b>
-              <br>
+              Below is a demonstration video of the Rhabdomyosarcoma segmentation model
+              <br></br>
+              Our segmentation model, which identifies regions containing ARMS, ERMS, necrosis, 
+              and stroma in whole slide images, utilizes a standard UNet model as implemented 
+              by the Segmentation Models package for pytorch.   The UNet employs transfer learning, 
+              initializied with weights from prior training using the ImageNet database,  
+              before being trained using images from our cohort.  
+
             </v-card-text>
+               <div>
+                <section>
+                  <youtube
+                    :video-id="SegmentvideoId"
+                    :player-width="500"
+                    :player-height="300"
+                    @ready="ready"
+                    @playing="playing"
+                  ></youtube>
+                </section>
+              </div>
+            </v-card>
+        </div> 
+   
+        <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
+  	       <v-card class="mb-4 ml-4 mr-4">
+            <v-card-text>
+              Below is a demonstration video of the RMS MYOD1 mutation prediction  model
+             <br></br>
+              The MYOD1 classification network uses pre-trained ResNet50 models.  Similar to the segmentation 
+              model, the ImageNet dataset was used to provide the pre-trained weights for the model 
+              prior to additional training on our cohort of images to predict MYOD1 mutation.  
+              The method used in this application is to sample four thousand small patches containing 
+              RMS lesions from random locations within the image being analyzed.  Our segmentation 
+              model (described above) is used to detect the presence of a form of RMS in the 
+              patches. These patches are then input to the ResNet50 model to generate a prediction 
+              score.  To improve accuracy, our final prediction is taken as the average output value 
+              from an ensemble of three separately trained ResNet50 networks.  
+            </v-card-text>
+              <div>
+                <section>
+                  <youtube
+                    :video-id="MYOD1videoId"
+                    :player-width="500"
+                    :player-height="300"
+                    @ready="ready"
+                    @playing="playing"
+                  ></youtube>
+                </section>
+              </div>
+            </v-card>
+        </div> 
 
-             <div id="visM" ref="visModel" class="mt-20 mb-4 ml-4 mr-4"></div>
-          </v-card>
-
-          <v-card v-if="table.length > 0" class="mt-8 mb-4 ml-4 mr-4">
-            <v-card-text>Image Statistics</v-card-text>
-            <json-data-table :data="table" />
-          </v-card>
-        </div>
-
+        <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
+  	       <v-card class="mb-4 ml-4 mr-4">
+            <v-card-text>
+              Below is a demonstration video of the RMS Survivability prediction model
+              <br></br>
+              The Survivability model uses the same approach as the MYOD1 mutation model,
+               by extracting four thousand patches from the source image and generating 
+               a prediction score from the neural network output based on these input 
+               patches.  The classifier model consists of an ensemble of ResNet18 deep 
+               learning networks, each pre-trained on ImageNet.  To improve accuracy, 
+               our final prediction is calculated as the average output value from an 
+               ensemble of twenty separately trained ResNet18 networks. 
+            </v-card-text>
+              <div>
+                <section>
+                  <youtube
+                    :video-id="SurvideoId"
+                    :player-width="500"
+                    :player-height="300"
+                    @ready="ready"
+                    @playing="playing"
+                  ></youtube>
+                </section>
+              </div>
+            </v-card>
+        </div> 
 
 
       </v-layout>
@@ -92,352 +126,86 @@
 </template>
 
 <script>
+import { getIdFromURL } from "vue-youtube-embed";
+let SegmentvideoId = getIdFromURL("https://www.youtube.com/watch?v=HImUo94BLn8");
+let MYOD1videoId = getIdFromURL("https://www.youtube.com/watch?v=AF5xpUWVX8c");
+let SurvideoId = getIdFromURL("https://www.youtube.com/watch?v=zvL1UzGj6Qw");
 
-import { utils } from '@girder/components/src';
-import { csvParse } from 'd3-dsv';
-import scratchFolder from '../scratchFolder';
-import pollUntilJobComplete from '../pollUntilJobComplete';
-import optionsToParameters from '../optionsToParameters';
-import JsonDataTable from '../components/JsonDataTable';
-import OpenSeadragon from 'openseadragon';
-import vegaEmbed from 'vega-embed';
-import UploadManager from '../utils/upload';
-
+// vue-youtube-embed example found here:
+// https://www.nightprogrammer.com/vue-js/how-to-embed-a-youtube-video-and-use-controls-in-vue-js-example/
 
 export default {
-  name: 'infer_rhabdo',
-  inject: ['girderRest'],
+  name: 'instructions',
   components: {
-    JsonDataTable,
   },
   data: () => ({
-    imageFile: {},
-    imageFileName: '',
-    imagePointer: '',
-    imageBlob: [],
-    uploadedImageUrl: '',
-    job: { status: 0 },
-    readyToDisplayInput: false,
-    running: false,
-    thumbnail: [],
-    result: [],
-    table: [],
-    stats: [],
-    data: [],
-    resultColumns: [],
-    resultString:  '',
-    runCompleted: false,
-    uploadInProgress: false,
-    thumbnailInProgress: false,
-    inputImageUrl: '',
-    outputImageUrl: '',
-    inputDisplayed:  false,
-    outputDisplayed:  false,
-    osd_viewer: [],
-    imageStats: {},
-    progress: "0",
-    progressUpload: "0",
+    SegmentvideoId,
+    MYOD1videoId,
+    SurvideoId
+
   }),
   asyncComputed: {
-    scratchFolder() {
-      return scratchFolder(this.girderRest);
-    },
+
   },
   computed: {
-    readyToRun() {
-      return !!this.imageFileName; 
-    },
-    readyToDownload() {
-      return (this.runCompleted)
-    },
-    uploadIsHappening() {
-      return (this.uploadInProgress)
-    },
-    inputReadyForDisplay() {
-      return this.inputDisplayed
-    }
+    
   },
 
   methods: {
-
-    // method here to create and display a thumbnail of an arbitrarily large whole slilde image.
-    // This code is re-executed for each UI change, so the code is gated to only run once.  We only clear the "upload in progress"
-    // after the thumbnail calculation is finished so the user doesn't wonder what is happening during thumbnail calculation. 
-
-    async renderInputImage() {
-       if (this.inputDisplayed == false) {
-         this.thumbnailInProgress = true
-
-        // create a spot in Girder for the output of the REST call to be placed
-          const outputItem = (await this.girderRest.post(
-            `item?folderId=${this.scratchFolder._id}&name=thumbnail`,
-          )).data
-
-        // build the params to be passed into the REST call
-        const params = optionsToParameters({
-          imageId: this.imageFile._id,
-          outputId: outputItem._id,
-        });
-        // start the job by passing parameters to the REST call
-        this.job = (await this.girderRest.post(
-          `arbor_nova/wsi_thumbnail?${params}`,
-        )).data;
-
-          // wait for the job to finish
-          await pollUntilJobComplete(this.girderRest, this.job, job => this.job = job);
-
-          if (this.job.status === 3) {
-            this.running = false;
-            // pull the URL of the output from girder when processing is completed. This is used
-            // as input to an image on the web interface
-            this.thumbnail = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
-            // set this variable to display the resulting output image on the webpage 
-            this.inputImageUrl = window.URL.createObjectURL(this.thumbnail);
-          }
-
-          console.log('render input finished')
-          this.inputDisplayed = true
-          this.thumbnailInProgress = false
-	     }
+    ready(event) {
+      this.player = event.target;
+    },
+    playing(event) {
+      console.log("playing");
+    },
+    change() {
+      //this.videoId = "use another video id";
+    },
+    stop() {
+      this.player.stopVideo();
+    },
+    pause() {
+      this.player.pauseVideo();
+      console.log("paused");
+    },
+    play() {
+      this.player.playVideo();
+      console.log("paused");
     },
 
-
-
-    // method is added here to enable openSeadragon to render the output image into a div defined in the vue template
-    // above.  This code is re-executed for each change, so the code is gated to only run once 
-    renderOutputImage(imageurl) {
-       if ((this.outputDisplayed == false) & (this.outputImageUrl.length > 0)) {
-        console.log('output url:',imageurl)
-      var viewer2 =  OpenSeadragon( {
-	       element: this.$refs.outputImageDiv, 
-	       maxZoomPixelRatio: 4.0,
-         prefixUrl: "/static/arbornova/images/",
-         tileSources: {
-          type: 'image',
-          url:   imageurl
-    	  }
-      	});
-        console.log('openseadragon output finished')
-      	this.outputDisplayed = true
-      	}
-      },
-
-    updateJobStatus(job) {
-      this.job = job
-      // pick out the last print message from the job
-
-      var last_element = job.log[job.log.length - 1];
-        if (last_element) {
-        //console.log(last_element)
-        let lastIndex = last_element.lastIndexOf('\n')
-        //console.log('lastindex:',lastIndex)
-        let progressSnippet = last_element.substring(lastIndex)
-        //console.log(progressSnippet)
-        //console.log(progressSnippet.substring(1,9))
-        //console.log(progressSnippet.substring(1,2))
-        // if this is a progress update string, then extract the percentage done and update the state variable
-        if (progressSnippet.substring(1,9)=='progress') {
-          // starting at this position, is the string of the value to update the progress bar
-          this.progress = progressSnippet.substring(11)
-          console.log('percentage:',this.progress)
-        }
-      }
-    },
-
-    async run() {
-      this.running = true;
-      this.errorLog = null;
-
-      // create a spot in Girder for the output of the REST call to be placed
-      const outputItem = (await this.girderRest.post(
-        `item?folderId=${this.scratchFolder._id}&name=result`,
-      )).data
-
-      // create a spot in Girder for the output of the REST call to be placed
-      const statsItem = (await this.girderRest.post(
-        `item?folderId=${this.scratchFolder._id}&name=stats`,
-      )).data
-
-      // build the params to be passed into the REST call
-      const params = optionsToParameters({
-        imageId: this.imageFile._id,
-        outputId: outputItem._id,
-        statsId: statsItem._id
-      });
-      // start the job by passing parameters to the REST call
-      this.job = (await this.girderRest.post(
-        `arbor_nova/infer_wsi?${params}`,
-      )).data;
-
-      // wait for the job to finish
-      await pollUntilJobComplete(this.girderRest, this.job, this.updateJobStatus);
-
-      if (this.job.status === 3) {
-        this.running = false;
-	       // pull the URL of the output from girder when processing is completed. This is used
-	       // as input to an image on the web interface
-        this.result = (await this.girderRest.get(`item/${outputItem._id}/download`,{responseType:'blob'})).data;
-	       // set this variable to display the resulting output image on the webpage 
-        this.outputImageUrl = window.URL.createObjectURL(this.result);
-
-        // get the stats returned
-        this.stats = (await this.girderRest.get(`item/${statsItem._id}/download`,{responseType:'text'})).data;
-        console.log('returned stats',this.stats)
-        console.log('parsed stats',this.stats.ARMS, this.stats.ERMS,this.stats.necrosis)
-
-        // copy this data to a state variable for rendering in a table
-        this.data = [this.stats]
-        this.data.columns = ['ARMS','ERMS','necrosis','stroma']
-        // render by updating the this.table model
-        this.table = this.data
-
-        // render the image statistics below the image
-        this.runCompleted = true;
-
-        // build the spec here.  Inside the method means that the data item will be available. 
-        let titleString = 'Percentage of the slide positive for each tissue class'
-
-      var vegaLiteSpec = {
-            "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
-            "description": "A simple bar chart with embedded data.",
-             title: titleString,
-              "height": 450,
-              "width": 600,
-              "autosize": {
-                "type": "fit",
-                "contains": "padding"
-              },
-            "data": {
-              "values": [
-                {"Class": "ARMS","percent": this.stats.ARMS}, 
-                {"Class": "ERMS","percent": this.stats.ERMS}, 
-                {"Class": "Stroma","percent": this.stats.stroma}, 
-                {"Class": "Necrosis","percent": this.stats.necrosis}
-              ]
-            },
-           "layer": [{
-              "mark": "bar"
-            }, {
-              "mark": {
-                "type": "text",
-                "align": "center",
-                "baseline": "bottom",
-                "fontSize": 13,
-                "dx": 0,
-              },
-              "encoding": {
-                "text": {"field": "percent", "type": "quantitative","color":{"value":"black"}}
-              }
-            }],
-            "encoding": {
-              "x": {"field": "Class", "type": "ordinal","title":"Tissue Classification"},
-              "y": {"field": "percent", "type": "quantitative","title":"Percent of tissue positive for each class"},
-              "color": {
-                  "field": "Class",
-                  "type":"nominal",
-                  "scale": {"domain":["ARMS","ERMS","Necrosis","Stroma"],"range": ["blue","red","gold","lightgreen"]}
-                  }
-            }
-          };
-          // render the chart with options to save as PNG or SVG, but other options turned off
-          vegaEmbed(this.$refs.visModel,vegaLiteSpec,
-                 {padding: 10, actions: {export: true, source: false, editor: false, compiled: false}});
-      }
-      if (this.job.status === 4) {
-        this.running = false;
-      }
-    },
-
-
-    async uploadImageFile_non_chunked(file) {
-      if (file) {
-        this.runCompleted = false;
-        this.imageFileName = file.name;
-        this.uploadInProgress = true;
-        const uploader = new utils.Upload(file, {$rest: this.girderRest, parent: this.scratchFolder});
-        this.imageFile = await uploader.start();
-        // display the uploaded image on the webpage
-	      console.log('displaying input image...');
-        //this.imageBlob = (await this.girderRest.get(`file/${this.imageFile._id}/download`,{responseType:'blob'})).data;
-        //this.uploadedImageUrl = window.URL.createObjectURL(this.imageBlob);
-	      //console.log('createObjURL returned: ',this.uploadedImageUrl);
-        this.readyToDisplayInput = true;
-        this.renderInputImage();
-      }
-    },
-
-    // display the progress of the image upload operation; called by uploadImageFile method during the upload process
-    async receiveProgress(status) {
-      //console.log(status.current,status.size)
-      this.progressUpload = (status.current/status.size*100.0).toString()
-      console.log('upload progress:',this.progressUpload)
-    },
-
-    // upload a file in multiple chunks to support large WSI files; a callback is supported to show progress
-    async uploadImageFile(file) {
-      if (file) {
-        this.runCompleted = false;
-        this.imageFileName = file.name;
-        this.uploadInProgress = true;
-        // this upload manager splits the file into smaller transfers to allow uploading a large file with a progress bar
-        const uploader = new UploadManager(file, {$rest: this.girderRest, parent: this.scratchFolder,progress: this.receiveProgress});
-        this.imageFile = await uploader.start();
-        // display the uploaded image on the webpage
-	      console.log('displaying input image...');
-        //this.imageBlob = (await this.girderRest.get(`file/${this.imageFile._id}/download`,{responseType:'blob'})).data;
-        //this.uploadedImageUrl = window.URL.createObjectURL(this.imageBlob);
-	      //console.log('createObjURL returned: ',this.uploadedImageUrl);
-        this.readyToDisplayInput = true;
-        this.uploadInProgress = false;
-        this.renderInputImage();
-      }
-    },
-
-
-
-    async loadSampleImageFile() {
-        console.log('load sample image')
-        this.runCompleted = false;
-        this.uploadInProgress = true;
-        this.imageFileName = 'Sample_WSI_Image.svs'
-        const params = optionsToParameters({
-              q: this.imageFileName,
-              types: JSON.stringify(["file"])
-            });
-        // find the sample image already uploaded in Girder
-        this.fileId = (await this.girderRest.get(
-          `resource/search?${params}`,
-        )).data["file"][0];
-
-        console.log('displaying sample input stored at girder ID:',this.fileId);
-        this.imageFile = this.fileId
-        this.uploadInProgress = false;
-        this.inputDisplayed == false;
-        this.readyToDisplayInput = true;
-        this.renderInputImage();
-        },
-
-
-
-    // download the segmentation image result when requested by the user
-    async downloadResults() {
-        const url = window.URL.createObjectURL(this.result);
-	      console.log("url:",url)
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'infer_results.png') 
-        document.body.appendChild(link);
-        link.click();
-	      document.body.removeChild(link);
-    },
-
-    // reload the page to allow the user to process another image.
-    // this clears all state and image displays. The scroll command
-    // resets the browser to the top of the page. 
-    reset() {
-      window.location.reload(true);
-      window.scrollTo(0,0);
-    },
   }
 }
 </script>
+
+
+<style>
+#app {
+  font-family: "Avenir", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 15px 10px;
+}
+.np-ib {
+  display: inline-block;
+}
+.np-button {
+  margin-top: 10px;
+  background: #0051ff;
+  color: #ffffff;
+  width: 80px;
+  margin-right: 10px;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.np-button:hover {
+  background: #4e86ff;
+  transition: all 0.3s;
+}
+.np-credits {
+  font-size: 12px;
+  padding-bottom: 14px;
+}
+</style>

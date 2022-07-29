@@ -5,6 +5,7 @@ import infer_rhabdo from './apps/infer_rhabdo.vue'
 import infer_wsi from './apps/infer_wsi.vue'
 import myod1 from './apps/myod1.vue'
 import survivability from './apps/survivability.vue'
+import instructions from './apps/instructions.vue'
 
 Vue.use(Router)
 

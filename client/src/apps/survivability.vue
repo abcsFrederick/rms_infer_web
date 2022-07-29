@@ -36,6 +36,12 @@
             >
           </v-flex>
       -->
+      <!--
+      <v-switch
+        v-model="fastMode"
+        :label="`Enable Faster Approximate Result: ${fastMode.toString()}`"
+      ></v-switch>
+      -->
           <v-flex xs12>
             <v-btn
               block
@@ -126,7 +132,7 @@
         </div>
 
         <div v-if="running" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-     Running Survivability Neural network inferencing.  Please wait for the output to show below.  This will take 30-60 minutes.
+     Running Survivability Neural network inferencing.  Please wait for the output to show below.  This may take longer than 60 minutes.
           <v-progress-linear :value="surviveProgress"></v-progress-linear>
         </div>
         <div v-if="runCompleted" xs12 class="text-xs-center mb-4 ml-4 mr-4">
@@ -206,6 +212,7 @@ export default {
     segmentProgress: "0",
     surviveProgress: "0",
     stats: {},
+    fastMode: true,
   }),
   asyncComputed: {
     scratchFolder() {
@@ -309,19 +316,23 @@ export default {
         // pick out the last print message from the job
 
         var last_element = job.log[job.log.length - 1];
-          if (last_element) {
-            //console.log('last_element:',last_element)
+        if (last_element) {
             var lastIndex = last_element.lastIndexOf('\n')
-            //console.log('lastindex:',lastIndex)
             let progressSnippet = last_element.substring(0,lastIndex)
-            //console.log(progressSnippet)
-            //console.log(progressSnippet.substring(0,9))
-            //console.log(progressSnippet.substring(1,2))
-            // if this is a progress update string, then extract the percentage done and update the state variable
-            if (progressSnippet.substring(0,8)=='progress') {
-              // starting at this position, is the string of the value to update the progress bar
-              this.surviveProgress = progressSnippet.substring(9,lastIndex)
-              console.log('percentage:',this.surviveProgress)
+            // for some reason in this app, we receive a multiline string, so split it 
+            // and explore each component
+            //console.log('snippet:',progressSnippet)
+            var splitLog = progressSnippet.split('\n')
+            console.log('split:',splitLog)
+            // look through each component looking for the progress update
+            for (let i = 0; i < splitLog.length; i++) {
+              var testString = splitLog[i].substring(0,8)
+              if (testString == 'progress') {
+                  // we found the progress printout, get the value and update progress
+                  var progValue = splitLog[i].substring(10,splitLog[i].length)
+                  console.log('found progress:',progValue)
+                  this.surviveProgress = progValue
+              }
             }
         }
       },

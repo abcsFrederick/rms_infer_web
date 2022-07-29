@@ -3,6 +3,7 @@ from girder_worker.app import app
 from girder_worker.utils import girder_job
 from tempfile import NamedTemporaryFile
 
+import torch
 import subprocess
 
 import json
@@ -47,8 +48,8 @@ def survivability(self,image_file, segment_image_file,**kwargs):
         print('cuda is not available')
 
     # set the UI to 0% progress initially. stdout is parsed by the ui
-    print(f'progress: {2.5}')
-    print(f'progress: {5}')
+    print('progress: 2.5')
+    print('progress: 5')
 
     # find and run all models in the models directory. Return the average value of the models
     # as the final result
@@ -65,8 +66,8 @@ def survivability(self,image_file, segment_image_file,**kwargs):
         resultArrayMean.append(float(predict_values['mean']))
         #resultArray.append(predict_values)
         progressPercent = round((fold+1)/totalFolds*100,2)
-        print(f'progress: {progressPercent}')
-        print(f'progress: {progressPercent+1}')
+        print('progress:',progressPercent)
+        print('progress:',progressPercent+1)
     print('completed all folds')
 
  
