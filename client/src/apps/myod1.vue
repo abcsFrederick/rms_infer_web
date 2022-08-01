@@ -85,11 +85,17 @@
               <b>This application analyzes a whole slide image for genetic mutation by executing a neural network that has
                   been pre-trained to predict MYOD1 mutations in rhabdomyosarcoma tissue subtypes in H&E stained   
                   whole slide images.  Uploaded images must in Aperio (.svs) or another similar WSI format.  Large PNG and TIFF files are not supported.
-                            <br><br>
-                  After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Calculate" button to begin execution.  Execution may take up to several minutes,
+                  <br><br>
+                  After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the
+                   "Calculate" button to begin execution.  Execution may take up to several minutes,
                   depending on the size of the input image being provided.  When the analysis is complete, the resulting classification and confidence information 
-                  will be displayed below and will be available for downloading, using the download button.  If you would like to classify additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
-                            <br><br>
+                  will be displayed below and will be available for download.
+                  <br><br>
+                    Once the chart is displayed showing your uploaded image compared with our cohort, the chart may be downloaded by selecting
+                    an option from the "three dots menu" near the top right corner of the chart.  After you are finished reviewing results, 
+                    If you would like to classify additional images, please just click "Prepare for Another Image" in between the processing of each image. 
+                    This tells the system to reset and prepare to run again.  
+                    <br><br>
                   We are delighted that you are trying our early release system for rhabdomyosarcoma analysis.  
                 </b>
             </v-card-text>
