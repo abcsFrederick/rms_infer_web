@@ -7,9 +7,6 @@ import sys
 # needed for exponential function applied to NN predicted value
 import math
 
-# needed to copy imagery from girder to files for endpoint access
-import girder_client
-
 #from girder_worker_tasks.arbor_nova_tasks.arbor_tasks.fnlcr.infer_rms_map import infer_rms_map
 
 #-------------------------------------------
@@ -35,13 +32,7 @@ Image.MAX_IMAGE_PIXELS = None
 
 # globals
 globals = {}
-globals['mongo-database'] = 'RMS_infer'
-globals['mongo-host'] = 'localhost'
-globals['mongo-log-collection'] = 'logging'
-globals['mongo-port'] = 27017
 globals['timezone'] = 'US/Eastern'
-globals['girderUser'] = 'anonymous'
-globals['girderPassword'] = 'letmein'
 globals['docker'] = True
 
 if globals['docker'] == True:
@@ -53,11 +44,10 @@ else:
 client = None
 log_collection = None
 
-#
-USE_GPU = True
+#  Due to limitations of the calling Girder job, all print output is suppressed from this method except
+# for a final printout of the calculated results 
 
 def performInferenceFunction(image_file,segment_file,model_file):   
-    global USE_GPU
     
     #print('performInference image_file',image_file)
     #print('performInference segment_file',segment_file)
@@ -66,23 +56,12 @@ def performInferenceFunction(image_file,segment_file,model_file):
     # setup the GPU environment for pytorch
     gpu_count = torch.cuda.device_count()
     if  (gpu_count>0):
-        # we have GPUs, let us build a string that contains all GPUs for CUDA
-        #print('Using GPUs. To disable GPU use, set environment variable USE_GPU=0')
-        #gpus_to_use = ''
-        #for index in range(gpu_count):
-        #    gpus_to_use += str(index) if (index+1 == gpu_count) else (str(index)+',')
-        #os.environ['CUDA_VISIBLE_DEVICES'] = gpus_to_use
-        #device = torch.device('cuda')
-        USE_GPU = True
+        # we have GPUs
         device = 'gpu'
     else:
-        #print('selecting use of cpu for inferencing')
         # we are not using GPUs, clear this string so torch uses CPUs
-        #os.environ['CUDA_VISIBLE_DEVICES'] = ''
-        USE_GPU = False
         device = 'cpu'
     #print('perform forward inferencing using device:',device)
-
 
 
     # run a single model and update the job progress after each one completes

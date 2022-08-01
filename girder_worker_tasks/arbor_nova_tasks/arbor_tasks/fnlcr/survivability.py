@@ -3,6 +3,7 @@ from girder_worker.app import app
 from girder_worker.utils import girder_job
 from tempfile import NamedTemporaryFile
 
+import torch
 import subprocess
 
 import json
@@ -24,21 +25,32 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 REPORTING_INTERVAL = 10
-
+NumberOfFastModeFolds = 5
 IMAGE_SIZE = 224
 PRINT_FREQ = 20
+
+# define global variable that is set according to whether GPUs are discovered
+USE_GPU = True
 
 
 @girder_job(title='survivability')
 @app.task(bind=True)
-def survivability(self,image_file, segment_image_file,**kwargs):
+def survivability(self,image_file, segment_image_file,fastmode: True,**kwargs):
+    global USE_GPU
     print('running ensemble survivability model')
     #print(" input image filename = {}".format(image_file))
 
-    print('using',os.environ.get('CUDA_VISIBLE_DEVICES'),'CUDA devices available')
+    gpu_count = torch.cuda.device_count()
+    if torch.cuda.is_available():
+        print('cuda is available')
+        print('using',gpu_count,'CUDA devices available')
+    else:
+        print('cuda is not available')
 
-    # set the UI to 0% progress initially. stdout is parsed by the ui
-    print(f'progress: {0}')
+    # set the UI to low nonzero progress initially. stdout is parsed by the ui
+    print('progress: 5')
+    if (fastmode=='true'):
+        print('fastmode for model execution was requested. Averaging only',NumberOfFastModeFolds,'folds')
 
     # find and run all models in the models directory. Return the average value of the models
     # as the final result
@@ -47,6 +59,7 @@ def survivability(self,image_file, segment_image_file,**kwargs):
     resultArrayMean = []
     models = glob.glob('/rms_infer_web/models/surv*')
     totalFolds = len(models)
+    print('Found',totalFolds,'folds for the full model')
     for fold,model in enumerate(models):
         print('**** running with model',model)
         predict_values = start_remote_process(image_file,segment_image_file,model,fold,totalFolds)
@@ -54,8 +67,17 @@ def survivability(self,image_file, segment_image_file,**kwargs):
         resultArraySecondBest.append(float(predict_values['secondBest']))
         resultArrayMean.append(float(predict_values['mean']))
         #resultArray.append(predict_values)
-        progressPercent = round((fold+1)/totalFolds*100,2)
-        print(f'progress: {progressPercent}')
+        # the job log is an iteration behind, so report one fold higher percent completion than usual, so the 
+        # interface is up to date with the actual job progress
+        progressPercent = round((fold+2)/totalFolds*100,2)
+        print('progress:',progressPercent)
+        print('progress:',progressPercent+1)
+
+        # if the user indicated that wanted a faster approximate answer return, 
+        # only average the first few folds together
+        if (fastmode=='true') and (fold >= NumberOfFastModeFolds-1):
+            print('fastmode early exit was requested. Fewer folds evaluated.')
+            break
     print('completed all folds')
 
  

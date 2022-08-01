@@ -181,6 +181,7 @@ class ArborNova(Resource):
         Description('perform classification through forward inferencing using a pretrained network')
         .param('imageId', 'The ID of the source, an Aperio .SVS image file.')
         .param('segmentId', 'The ID of the segmentation image, a PNG or TIFF image.')
+        .param('fastmode', 'a binary flag indicating user desire to return a faster, approximate solution')
         .param('statsId', 'The ID of the output item where the output file will be uploaded.')
         .errorResponse()
         .errorResponse('Write access was denied on the parent item.', 403)
@@ -190,13 +191,16 @@ class ArborNova(Resource):
             self, 
             imageId,
             segmentId,
-            statsId
+            fastmode,
+            statsId,
+
     ):
         result = survivability.delay(
                 #GirderFileId(imageId), 
                 GirderFileIdAllowDirect(imageId), 
                 #GirderFileId(segmentId), 
-                GirderFileIdAllowDirect(segmentId), 
+                GirderFileIdAllowDirect(segmentId),
+                fastmode, 
                 girder_result_hooks=[
                     GirderUploadToItem(statsId),
                 ])

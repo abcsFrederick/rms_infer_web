@@ -431,6 +431,7 @@ export default {
         //this.uploadedImageUrl = window.URL.createObjectURL(this.imageBlob);
 	      //console.log('createObjURL returned: ',this.uploadedImageUrl);
         this.readyToDisplayInput = true;
+        this.uploadInProgress = false;
         this.renderInputImage();
       }
     },

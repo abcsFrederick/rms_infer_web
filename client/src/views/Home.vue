@@ -211,24 +211,30 @@ export default {
     cilogonText: 'Login with Google Account here',
     loginText: 'Please login here',
     samples: [
-     {   
+      {   
+       label: 'Instructions',
+       image: require('../assets/instructions.png'),
+       route: 'instructions',
+       description: 'Quick start instructions on using this RMS application'
+      },
+      {   
        label: 'Whole Slide RMS Segmentation',
        image: require('../assets/RMS-WSI-segmentation.png'),
        route: 'infer_wsi',
        description: 'Segment an entire H&E-stained Rhabdomyosarcoma WSI by uploading the slide for processing',
-     },    
-     {   
+      },    
+      {   
        label: 'MyoD1 Positive/Negative',
        image: require('../assets/myod1.png'),
        route: 'myod1',
        description: 'Predict MYOD1 Positive/Negative from an H&E WSI',
-     },   
-     {   
+      },   
+      {   
        label: 'Survivability',
        image: require('../assets/survivability.png'),
        route: 'survivability',
        description: 'Predict survivability from an H&E WSI',
-     },   
+      },   
     ],
   }),
 
@@ -251,6 +257,10 @@ created () {
 // else that isn't visible until the user has logged in
 computed: {
  loggedIn() {
+   return true
+ },
+
+ loggedIn_real() {
       if (this.username == null) {
         return false
       } else {
