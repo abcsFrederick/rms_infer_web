@@ -25,7 +25,7 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 REPORTING_INTERVAL = 10
-NumberOfFastModeFolds = 1
+NumberOfFastModeFolds = 5
 IMAGE_SIZE = 224
 PRINT_FREQ = 20
 
@@ -50,7 +50,7 @@ def survivability(self,image_file, segment_image_file,fastmode: True,**kwargs):
     # set the UI to low nonzero progress initially. stdout is parsed by the ui
     print('progress: 5')
     if (fastmode=='true'):
-        print('fastmode for model execution was requested')
+        print('fastmode for model execution was requested. Averaging only',NumberOfFastModeFolds,'folds')
 
     # find and run all models in the models directory. Return the average value of the models
     # as the final result
@@ -59,6 +59,7 @@ def survivability(self,image_file, segment_image_file,fastmode: True,**kwargs):
     resultArrayMean = []
     models = glob.glob('/rms_infer_web/models/surv*')
     totalFolds = len(models)
+    print('Found',totalFolds,'folds for the full model')
     for fold,model in enumerate(models):
         print('**** running with model',model)
         predict_values = start_remote_process(image_file,segment_image_file,model,fold,totalFolds)
@@ -66,7 +67,9 @@ def survivability(self,image_file, segment_image_file,fastmode: True,**kwargs):
         resultArraySecondBest.append(float(predict_values['secondBest']))
         resultArrayMean.append(float(predict_values['mean']))
         #resultArray.append(predict_values)
-        progressPercent = round((fold+1)/totalFolds*100,2)
+        # the job log is an iteration behind, so report one fold higher percent completion than usual, so the 
+        # interface is up to date with the actual job progress
+        progressPercent = round((fold+2)/totalFolds*100,2)
         print('progress:',progressPercent)
         print('progress:',progressPercent+1)
 

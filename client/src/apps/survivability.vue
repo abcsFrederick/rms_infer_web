@@ -90,10 +90,19 @@
               Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.
               <br><br>
               After selecting an image for upload, please be patient during the upload process. Once the input image is displayed below, please click the 
-              "Calculate Risk Analysis" button to begin execution.  Execution may take longer than 30 minutes,
-              depending on the size of the input image being provided.  When the analysis is complete, the analysis result
-              will be displayed below and will be available for downloading, using the download button.  If you would like to analyze additional images, 
-              please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
+              "Calculate Risk Analysis" button to begin execution.  Execution may take longer than 30 minutes and up to several hours,
+              depending on the size of the input image being provided and the computer used to execute the analysis.   
+              <br><br>
+              Since this analysis can take a very long time, an option is provided: Our full algorithm is an ensemble everage across 
+              twenty separate models.   If instead you prefer to average only 25% of the models and receive an approximate answer back more
+              quickly, just set the "Enable Faster Approximate Result" option to true.  Be aware this result won't be as accurate as the 
+              full model.  However, it should return approximately four times faster than the full model.  
+              <br><br>
+              When the analysis is complete, the analysis result
+              is shown as a downloadable chart below the images. Click the "three dot" menu at the top right of the chart 
+              to download a copy of the chart.  If you would like to analyze additional images, 
+              please just click "Prepare for Another Image" in between each segmentation operation. This tells the system 
+              to reset and prepare to run again.  
               <br><br>
 		          Thank you for trying our early release system for rhabdomyosarcoma whole slide analysis. 
 		</b>
@@ -131,7 +140,7 @@
         </div>
 
         <div v-if="running" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-     Running Survivability Neural network inferencing.  Please wait for the output to show below.  This may take longer than 60 minutes.
+        Running Survivability Neural network inferencing.  Please wait for the output to show below.  This may take longer than 60 minutes.
           <v-progress-linear :value="surviveProgress"></v-progress-linear>
         </div>
         <div v-if="runCompleted" xs12 class="text-xs-center mb-4 ml-4 mr-4">
@@ -144,10 +153,10 @@
               compared to the images in our training cohort.  Click the elipsis icon at the top right 
               to save a copy of the chart to your local system.
           </div>
-          <v-card  align="center" justify="center" class="mt-20 mb-4 ml-4 mr-4">
-            
-            <div id="visM" ref="visModel" class="mt-20 mb-4 ml-4 mr-4"></div>          </v-card>
-      </v-card>
+          <v-card  align="center" justify="center" class="mt-20 mb-4 ml-4 mr-4">     
+            <div id="visM" ref="visModel" class="mt-20 mb-4 ml-4 mr-4"></div>
+          </v-card>
+
 
           <v-card v-if="table.length > 0" class="mt-8 mb-4 ml-4 mr-4">
             <v-card-text>Probability (0 to 1) of MYOD1+ Mutation:</v-card-text>

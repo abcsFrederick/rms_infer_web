@@ -27,15 +27,7 @@
             </v-card-text>
             
           </v-card>
-           <div v-if="uploadIsHappening" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-           Image Upload in process...
-           <v-progress-linear :value="progressUpload"></v-progress-linear>
-          </div>
-
-          <div v-if="thumbnailInProgress" xs12 class="text-xs-center mb-4 ml-4 mr-4">
-            Generating a thumbnail of the uploaded image
-            <v-progress-linear indeterminate=True></v-progress-linear>
-          </div>
+          
 
         <div  xs12 class="text-xs-center mb-4 ml-4 mr-4">
   	       <v-card class="mb-4 ml-4 mr-4">
