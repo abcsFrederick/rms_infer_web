@@ -127,9 +127,9 @@
 
 <script>
 import { getIdFromURL } from "vue-youtube-embed";
-let SegmentvideoId = getIdFromURL("https://www.youtube.com/watch?v=HImUo94BLn8");
-let MYOD1videoId = getIdFromURL("https://www.youtube.com/watch?v=AF5xpUWVX8c");
-let SurvideoId = getIdFromURL("https://www.youtube.com/watch?v=zvL1UzGj6Qw");
+let SegmentvideoId = getIdFromURL("https://www.youtube.com/watch?v=mWJmZr4NfNM");
+let MYOD1videoId = getIdFromURL("https://www.youtube.com/watch?v=EIEvHWZJXHQ");
+let SurvideoId = getIdFromURL("https://www.youtube.com/watch?v=PlV5Ss5h6fk");
 
 // vue-youtube-embed example found here:
 // https://www.nightprogrammer.com/vue-js/how-to-embed-a-youtube-video-and-use-controls-in-vue-js-example/

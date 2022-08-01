@@ -25,7 +25,7 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = None
 
 REPORTING_INTERVAL = 10
-
+NumberOfFastModeFolds = 1
 IMAGE_SIZE = 224
 PRINT_FREQ = 20
 
@@ -35,7 +35,7 @@ USE_GPU = True
 
 @girder_job(title='survivability')
 @app.task(bind=True)
-def survivability(self,image_file, segment_image_file,**kwargs):
+def survivability(self,image_file, segment_image_file,fastmode: True,**kwargs):
     global USE_GPU
     print('running ensemble survivability model')
     #print(" input image filename = {}".format(image_file))
@@ -47,9 +47,10 @@ def survivability(self,image_file, segment_image_file,**kwargs):
     else:
         print('cuda is not available')
 
-    # set the UI to 0% progress initially. stdout is parsed by the ui
-    print('progress: 2.5')
+    # set the UI to low nonzero progress initially. stdout is parsed by the ui
     print('progress: 5')
+    if (fastmode=='true'):
+        print('fastmode for model execution was requested')
 
     # find and run all models in the models directory. Return the average value of the models
     # as the final result
@@ -68,6 +69,12 @@ def survivability(self,image_file, segment_image_file,**kwargs):
         progressPercent = round((fold+1)/totalFolds*100,2)
         print('progress:',progressPercent)
         print('progress:',progressPercent+1)
+
+        # if the user indicated that wanted a faster approximate answer return, 
+        # only average the first few folds together
+        if (fastmode=='true') and (fold >= NumberOfFastModeFolds-1):
+            print('fastmode early exit was requested. Fewer folds evaluated.')
+            break
     print('completed all folds')
 
  

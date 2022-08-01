@@ -36,12 +36,11 @@
             >
           </v-flex>
       -->
-      <!--
       <v-switch
-        v-model="fastMode"
-        :label="`Enable Faster Approximate Result: ${fastMode.toString()}`"
+        v-model="fastmode"
+        :label="`Enable Faster Approximate Result: ${fastmode.toString()}`"
       ></v-switch>
-      -->
+
           <v-flex xs12>
             <v-btn
               block
@@ -212,7 +211,7 @@ export default {
     segmentProgress: "0",
     surviveProgress: "0",
     stats: {},
-    fastMode: true,
+    fastmode: true,
   }),
   asyncComputed: {
     scratchFolder() {
@@ -365,6 +364,7 @@ export default {
         imageId: this.imageFile._id,
         segmentFileName: this.segmentFileName,
         segmentId: this.segmentFile._id,
+        fastmode: this.fastmode,
         statsId: outputItem._id
       });
       // start the job by passing parameters to the REST call
