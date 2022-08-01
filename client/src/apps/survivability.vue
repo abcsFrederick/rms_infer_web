@@ -93,7 +93,7 @@
               "Calculate Risk Analysis" button to begin execution.  Execution may take longer than 30 minutes and up to several hours,
               depending on the size of the input image being provided and the computer used to execute the analysis.   
               <br><br>
-              Since this analysis can take a very long time, an option is provided: Our full algorithm is an ensemble everage across 
+              Since this analysis can take a very long time, an option is provided: Our full algorithm is an ensemble average across 
               twenty separate models.   If instead you prefer to average only 25% of the models and receive an approximate answer back more
               quickly, just set the "Enable Faster Approximate Result" option to true.  Be aware this result won't be as accurate as the 
               full model.  However, it should return approximately four times faster than the full model.  

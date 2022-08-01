@@ -74,9 +74,9 @@
     has been validated using 10x magnification images.  Other uploaded image magnifications will be resampled to 10x before 
     being analyzed. 
               <br><br>
-    To run successfully, this application requires a host system with 32GB or larger of system RAM and an NVIDIA 
-     GPU with 12GB or larger GPU memory size.  This application may fail to execute corrrectly if the host 
-    system has lower specifications. Large WSI images will require even more host memory to process (e.g.128GB or even more).
+    To run successfully, this application requires a host system with 32GB or larger of system RAM (128GB is suggested).  A GPU with 12GB or larger 
+    GPU memory size is suggested to speed execution, but a GPU is not required to run this application.  This application may fail to execute corrrectly if the host 
+    system has lower memory size than what is suggested. Large WSI images will require may require even more than 128GB of host memory to process. 
               <br><br>
 		After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Segment the Image" button to begin execution.  Execution may take up to several minutes,
 		depending on the size of the input image being provided.  When the analysis is complete, the resulting segmentation
