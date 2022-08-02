@@ -12,6 +12,7 @@ import json
 import sys
 import os
 
+
 # for explicit memory management of large images
 import gc
 
@@ -687,10 +688,12 @@ def start_inference(msg_queue, image_file):
     best_prec1_valid = 0.
     #torch.backends.cudnn.benchmark = True
 
-    # update version of segmentation model
-    #saved_weights_list = [WEIGHT_PATH+'model_iou_0.4996_0.5897_epoch_45.pth.tar']
-    saved_weights_list = [WEIGHT_PATH+'model_iou_0.7343_0.7175_epoch_60.pth.tar'] 
-    print(saved_weights_list)
+    # update so weights of segmentation model can be updated dynamically
+    # search in the models directory for a 'model_iou' pattern
+    
+    #saved_weights_list = [WEIGHT_PATH+'model_iou_0.7343_0.7175_epoch_60.pth.tar'] 
+    saved_weights_list = sorted(glob.glob(WEIGHT_PATH + 'model_iou*.tar'))
+    print('found model:',saved_weights_list)
 
     # create segmentation model with pretrained encoder
     model = smp.Unet(
@@ -723,10 +726,11 @@ def start_inference_mainthread(image_file):
     best_prec1_valid = 0.
     #torch.backends.cudnn.benchmark = True
 
-    # update to newer weights
+    # update to discover weights dynamically
     #saved_weights_list = [WEIGHT_PATH+'model_iou_0.4996_0.5897_epoch_45.pth.tar']
-    saved_weights_list = [WEIGHT_PATH+'model_iou_0.7343_0.7175_epoch_60.pth.tar'] 
-    print(saved_weights_list)
+    #saved_weights_list = [WEIGHT_PATH+'model_iou_0.7343_0.7175_epoch_60.pth.tar'] 
+    saved_weights_list = sorted(glob.glob(WEIGHT_PATH + 'model_iou*.tar'))
+    print('found model:',saved_weights_list)
 
     print('about to instantiate model')
     # create segmentation model with pretrained encoder
