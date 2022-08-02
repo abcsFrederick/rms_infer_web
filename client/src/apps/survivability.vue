@@ -86,22 +86,22 @@
             <v-card-text>
               <b>
               For the survivability analsys, an ensemble model, constructed by combining a set of neural network models, has been trained to generate a risk prediction from an H&E whole slide image.
-              This application runs the ensemble model on an uploaded image to generate risk categories derived from comoparing with our research cohort. 
+              This application runs the ensemble model on an uploaded image to generate risk categories derived from comparison with our research cohort. 
               Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.
               <br><br>
               After selecting an image for upload, please be patient during the upload process. Once the input image is displayed below, please click the 
-              "Calculate Risk Analysis" button to begin execution.  Execution may take longer than 30 minutes and up to several hours,
+              "Calculate Risk Group" button to begin execution.  Execution may take longer than 30 minutes and up to several hours,
               depending on the size of the input image being provided and the computer used to execute the analysis.   
               <br><br>
               Since this analysis can take a very long time, an option is provided: Our full algorithm is an ensemble average across 
-              twenty separate models.   If instead you prefer to average only 25% of the models and receive an approximate answer back more
+              twenty separate models.   If you prefer to average across only 25% of the models and receive an approximate answer back more
               quickly, just set the "Enable Faster Approximate Result" option to true.  Be aware this result won't be as accurate as the 
               full model.  However, it should return approximately four times faster than the full model.  
               <br><br>
               When the analysis is complete, the analysis result
               is shown as a downloadable chart below the images. Click the "three dot" menu at the top right of the chart 
               to download a copy of the chart.  If you would like to analyze additional images, 
-              please just click "Prepare for Another Image" in between each segmentation operation. This tells the system 
+              please just click "Prepare for Another Image" in between each analysis operation. This tells the system 
               to reset and prepare to run again.  
               <br><br>
 		          Thank you for trying our early release system for rhabdomyosarcoma whole slide analysis. 
