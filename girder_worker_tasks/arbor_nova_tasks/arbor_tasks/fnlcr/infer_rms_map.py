@@ -134,9 +134,9 @@ ACTIVATION = None
 # directory instead
 
 if (os.getenv('DOCKER') == 'True') or (os.getenv('DOCKER') == 'True'):
-    WEIGHT_PATH = './models/'
+    WEIGHT_PATH = '/rms_infer_web/models/'
 else:
-    WEIGHT_PATH = './models/'
+    WEIGHT_PATH = '/rms_infer_web//models/'
 
 # these aren't used in the girder version, no files are directly written out 
 # by the routines written by FNLCR (Hyun Jung)
@@ -697,8 +697,9 @@ def start_inference(msg_queue, image_file):
     #torch.backends.cudnn.benchmark = True
 
     #saved_weights_list = sorted(glob.glob(WEIGHT_PATH + '*.tar'))
-    saved_weights_list = [WEIGHT_PATH+'model_iou_0.4996_0.5897_epoch_45.pth.tar'] 
-    print(saved_weights_list)
+    #saved_weights_list = [WEIGHT_PATH+'model_iou_0.4996_0.5897_epoch_45.pth.tar']
+    saved_weights_list = sorted(glob.glob(WEIGHT_PATH + 'model_iou*.tar'))
+    print('using model weights:',saved_weights_list)
 
     # create segmentation model with pretrained encoder
     model = smp.Unet(
@@ -731,9 +732,11 @@ def start_inference_mainthread(image_file):
     best_prec1_valid = 0.
     #torch.backends.cudnn.benchmark = True
 
-    #saved_weights_list = sorted(glob.glob(WEIGHT_PATH + '*.tar'))
-    saved_weights_list = [WEIGHT_PATH+'model_iou_0.4996_0.5897_epoch_45.pth.tar'] 
-    print(saved_weights_list)
+    # let the algorithm discover the weight file dynamically from the models director
+    #saved_weights_list = [WEIGHT_PATH+'model_iou_0.4996_0.5897_epoch_45.pth.tar']
+    saved_weights_list = sorted(glob.glob(WEIGHT_PATH + 'model_iou*.tar'))
+    print('using model weights:',saved_weights_list)
+
 
     print('about to instantiate model on GPU')
     # create segmentation model with pretrained encoder
