@@ -89,6 +89,11 @@
               This application runs the ensemble model on an uploaded image to generate risk categories derived from comparison with our research cohort. 
               Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.
               <br><br>
+              Please attempt this application on a computer system with at least 32GB of memory (as the absolute minumum).  We encourage the use of a recent NVIDIA GPU
+              with at least 12GB of GPU memory and at least 128GB of system memory to process larger images. In our experience, insuffient system memory is the most likely cause if 
+              this application does not finish successfully.   If you are using Docker Desktop application to run this image, it is likely you will need to go into the Resources 
+                tab and increase the "Memory Size" to be as large as possible for your particular system (at least 32GB).
+              <br><br>
               After selecting an image for upload, please be patient during the upload process. Once the input image is displayed below, please click the 
               "Calculate Risk Group" button to begin execution.  Execution may take longer than 30 minutes and up to several hours,
               depending on the size of the input image being provided and the computer used to execute the analysis.   

@@ -95,7 +95,12 @@
                     an option from the "three dots menu" near the top right corner of the chart.  After you are finished reviewing results, 
                     If you would like to classify additional images, please just click "Prepare for Another Image" in between the processing of each image. 
                     This tells the system to reset and prepare to run again.  
-                    <br><br>
+                  <br><br>
+                    Please attempt this application on a computer system with at least 32GB of memory (as the absolute minumum).  We encourage the use of a recent NVIDIA GPU
+                    with at least 12GB of GPU memory and at least 128GB of system memory to process larger images. In our experience, insuffient system memory is the most likely cause if 
+                    this application does not finish successfully.   If you are using Docker Desktop application to run this image, it is likely you will need to go into the Resources 
+                tab and increase the "Memory Size" to be as large as possible for your particular system (at least 32GB).
+                  <br><br>
                   We are delighted that you are trying our early release system for rhabdomyosarcoma analysis.  
                 </b>
             </v-card-text>
