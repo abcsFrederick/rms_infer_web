@@ -69,26 +69,27 @@
           <v-card class="ma-4">
             <v-card-text>
               <b>This application segments a whole slide image by executing a neural network that has
-		been pre-trained to segment rhabdomyosarcoma tissue subtypes in H&E stained   
-		whole slide images.  Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.  This algorithm 
-    has been validated using 10x magnification images.  Other uploaded image magnifications will be resampled to 10x before 
-    being analyzed. 
+              been pre-trained to segment rhabdomyosarcoma tissue subtypes in H&E stained   
+              whole slide images.  Uploaded images can be in Aperio (.svs) format or they can be pyramidal TIF files.  This algorithm 
+              has been validated using 10x magnification images.  Other uploaded image magnifications will be resampled to 10x before 
+              being analyzed. 
               <br><br>
-    To run successfully, this application requires a host system with 32GB or larger of system RAM (128GB is suggested).  A GPU with 12GB or larger 
-    GPU memory size is suggested to speed execution, but a GPU is not required to run this application.  This application may fail to execute corrrectly if the host 
-    system has lower memory size than what is suggested. Large WSI images will require may require even more than 128GB of host memory to process. 
+              Please attempt this application on a computer system with at least 32GB of memory (as the absolute minumum).  We encourage the use of a recent NVIDIA GPU
+              with at least 12GB of GPU memory and at least 128GB of system memory to process larger images. In our experience, insuffient system memory is the most likely cause if 
+              this application does not finish successfully.  If you are using Docker Desktop application to run this image, it is likely you will need to go into the Resources 
+                tab and increase the "Memory Size" to be as large as possible for your particular system (at least 32GB). 
               <br><br>
-		After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Segment the Image" button to begin execution.  Execution may take up to several minutes,
-		depending on the size of the input image being provided.  When the analysis is complete, the resulting segmentation
-		will be displayed below and will be available for downloading, using the download button.  
-    <br><br>
-    If the progress bar stops further advancing for a few
-    minutes, please refresh the browser page and try again with a smaller image.
-  <br><br>
-    If you would like to segment additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
+              After selecting an image for upload, be patient during the upload process. Once the input image is displayed below, please click the "Segment the Image" button to begin execution.  Execution may take up to several minutes,
+              depending on the size of the input image being provided.  When the analysis is complete, the resulting segmentation
+              will be displayed below and will be available for downloading, using the download button.  
               <br><br>
-		We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
-		</b>
+              If the progress bar stops further advancing for a few
+              minutes, please refresh the browser page and try again with a smaller image. Failures happen most often when the application runs out of available system memory.  
+              <br><br>
+              If you would like to segment additional images, please just click "Prepare for Another Image" in between each segmentation operation. This tells the system to reset and prepare to run again.  
+              <br><br>
+              We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
+              </b>
             </v-card-text>
             
           </v-card>

@@ -17,13 +17,18 @@
                 or virtual machine.  The application is also available as a downloadable docker
                 container.  
               <br><br>
-    This web interface is organized as several mini-applications: (instructions, segmentation, MYOD1 mutation, and survivability),
-     each of which has its own panel and instructions.  Below you will find demonstration videos 
-     about each of the RMS mini-applications included in this system.  To get back to the main interface anytime, 
-     just click the browser's back button. 
+                This web interface is organized as several mini-applications: (instructions, segmentation, MYOD1 mutation, and survivability),
+                each of which has its own panel and instructions.  Below you will find demonstration videos 
+                about each of the RMS mini-applications included in this system.  To get back to the main interface anytime, 
+                just click the browser's back button. 
               <br><br>
-		We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
-		</b>
+                Please attempt the RMS analysis application on a computer system with at least 32GB of memory (as the absolute minumum).  We encourage the use of a recent NVIDIA GPU
+                with at least 12GB of GPU memory and at least 128GB of system memory to process larger images. In our experience, insuffient system memory is the most likely cause if 
+                this application does not finish successfully.  If you are using Docker Desktop application to run this image, it is likely you will need to go into the Resources 
+                tab and increase the "Memory Size" to be as large as possible for your particular system (at least 32GB). 
+              <br><br>
+		          We are delighted that you are trying our early release system for rhabdomyosarcoma analysis. Thank you.  
+		          </b>
             </v-card-text>
             
           </v-card>

@@ -63,7 +63,7 @@ def survivability(self,image_file, segment_image_file,fastmode: True,**kwargs):
     for fold,model in enumerate(models):
         print('**** running with model',model)
         predict_values = start_remote_process(image_file,segment_image_file,model,fold,totalFolds)
-        print(predict_values)
+        #print(predict_values)
         resultArraySecondBest.append(float(predict_values['secondBest']))
         resultArrayMean.append(float(predict_values['mean']))
         #resultArray.append(predict_values)
@@ -71,7 +71,7 @@ def survivability(self,image_file, segment_image_file,fastmode: True,**kwargs):
         # interface is up to date with the actual job progress
         progressPercent = round((fold+2)/totalFolds*100,2)
         print('progress:',progressPercent)
-        print('progress:',progressPercent+1)
+        #print('progress:',progressPercent+1)
 
         # if the user indicated that wanted a faster approximate answer return, 
         # only average the first few folds together
