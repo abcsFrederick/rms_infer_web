@@ -1,4 +1,4 @@
-
+import os
 # added for girder interaction as plugin arbor task
 from girder_worker.app import app
 from girder_worker.utils import girder_job
@@ -22,7 +22,9 @@ def cohort(
     else:
         print('unknown cohort')
 
-    path = '/rms_infer_web/data'
+    # Relative path to girder_worker_tasks
+    path = os.path.join(os.getcwd(), 'rms_infer_web', 'data')
+    # path = '/rms_infer_web/data'
     print('reading data file')
     cohort_df = pd.read_csv(path+'/'+data_filename)
     print('reading complete')

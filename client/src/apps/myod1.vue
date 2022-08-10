@@ -349,10 +349,13 @@ export default {
 
       this.running = true
       // start the job by passing parameters to the REST call
-      this.job = (await this.girderRest.post(
-        `arbor_nova/myod1?${params}`,
-      )).data;
+      // this.job = (await this.girderRest.post(
+      //   `arbor_nova/myod1?${params}`,
+      // )).data;
 
+      this.job = (await this.girderRest.post(
+        `arbor_nova/myod1_hpc?${params}`,
+      )).data;
       // wait for the job to finish
       await pollUntilJobComplete(this.girderRest, this.job, this.updateJobStatus);
 

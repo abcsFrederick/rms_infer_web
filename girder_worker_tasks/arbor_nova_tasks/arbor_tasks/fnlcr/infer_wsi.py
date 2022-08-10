@@ -356,7 +356,6 @@ def isNotANumber(variable):
 #---------------- main inferencing routine ------------------
 def _inference(model, image_path, BATCH_SIZE, num_classes, kernel, num_tta=1):
     model.eval()
-
     # open an access handler on the large image
     source = large_image.getTileSource(image_path)
 

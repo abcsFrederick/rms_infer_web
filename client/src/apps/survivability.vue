@@ -388,8 +388,11 @@ export default {
       //  `survivability?${params}`,
       //)).data;
 
+      // this.job = (await this.girderRest.post(
+      //   `arbor_nova/survivability?${params}`,
+      // )).data;
       this.job = (await this.girderRest.post(
-        `arbor_nova/survivability?${params}`,
+        `arbor_nova/survivability_hpc?${params}`,
       )).data;
 
       // wait for the job to finish and then download the cohort table
