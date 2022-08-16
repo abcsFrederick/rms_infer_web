@@ -35,7 +35,7 @@ To Do the set up on a local system, building without using a docker container, p
     $ pip install -e .                     # install girder plugin
     $ girder serve                         # start serving girder
     $ pip install --pre girder-worker
-    $ cd arbor_nova/girder_worker_tasks    
+    $ cd rms_infer_web/girder_worker_tasks    
     $ pip install -e .                     # install gw tasks for consumer
     $ girder-worker                        # start girder-worker
     $ pip install torch==1.4.0
