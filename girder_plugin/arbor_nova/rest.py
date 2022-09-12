@@ -209,15 +209,14 @@ class ArborNova(Resource):
             imageId,
             segmentId,
             fastmode,
-            statsId,
-
+            statsId
     ):
         result = survivability.delay(
                 #GirderFileId(imageId), 
                 GirderFileIdAllowDirect(imageId), 
                 #GirderFileId(segmentId), 
-                GirderFileIdAllowDirect(segmentId),
-                fastmode, 
+                GirderFileIdAllowDirect(segmentId), 
+                fastmode,
                 girder_result_hooks=[
                     GirderUploadToItem(statsId),
                 ])
@@ -401,6 +400,7 @@ class ArborNova(Resource):
         Description('perform classification through forward inferencing using a pretrained network')
         .param('imageId', 'The ID of the source, an Aperio .SVS image file.')
         .param('segmentId', 'The ID of the segmentation image, a PNG or TIFF image.')
+        .param('fastmode', 'a binary flag indicating user desire to return a faster, approximate solution')
         .param('statsId', 'The ID of the output item where the output file will be uploaded.')
         .errorResponse()
         .errorResponse('Write access was denied on the parent item.', 403)
@@ -410,6 +410,7 @@ class ArborNova(Resource):
             self, 
             imageId,
             segmentId,
+            fastmode,
             statsId
     ):
         user = self.getCurrentUser()
@@ -438,7 +439,13 @@ class ArborNova(Resource):
             'input': slurmGirderInput.girderInputSpec(
                             inputFile, resourceType='file', token=token),
             'segmentation': slurmGirderInput.girderInputSpec(
-                            sefFile, resourceType='file', token=token)
+                            sefFile, resourceType='file', token=token),
+            'fastmode': {
+                'mode': 'inline',
+                'type': 'string',
+                'format': 'string',
+                'data': str(fastmode)
+            }
         }
         reference = json.dumps({'jobId': str(job['_id'])})
         pushStatsItem = Item().load(statsId, level=AccessType.WRITE, user=self.getCurrentUser())
