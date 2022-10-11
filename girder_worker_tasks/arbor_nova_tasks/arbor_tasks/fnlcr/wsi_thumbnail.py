@@ -25,7 +25,7 @@ def wsi_thumbnail(self,image_file,**kwargs):
         width=800, height=1024, encoding='PNG')
     print('Made a thumbnail of type %s taking %d bytes' % (
         mimeType, len(thumbnail)))
- 
+    print('output location: ', outname) 
     fileObj=open(outname, 'wb')
     fileObj.write(thumbnail)
     fileObj.flush()
