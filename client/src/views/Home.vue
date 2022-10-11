@@ -292,11 +292,11 @@ export default {
 // the page is rendered
 
 mounted () {
-  // 
-  const resp = this.girderRest.get('/nciLogin/endpoint')
-  if (resp.data) {
-      this.ITrustEndpoint = resp.data
-  }
+  this.girderRest.get('/nciLogin/endpoint').then((res) => {
+    if (res.data) {
+        this.ITrustEndpoint = res.data
+    }
+  })
 },
 
 created () {
