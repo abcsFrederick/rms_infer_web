@@ -17,6 +17,14 @@
           </v-card-title>
   
           <v-card-text>
+            <h>Please Sign In</h>
+            This warning banner provides privacy and security notices consistent with applicable federal laws, directives, and other federal guidance for accessing this Government system, which includes (1) this computer network, (2) all computers connected to this network, and (3) all devices and storage media attached to this network or to a computer on this network.
+This system is provided for Government-authorized use only.
+Unauthorized or improper use of this system is prohibited and may result in disciplinary action and/or civil and criminal penalties.
+Personal use of social media and networking sites on this system is limited as to not interfere with official work duties and is subject to monitoring.
+By using this system, you understand and consent to the following:
+The Government may monitor, record, and audit your system usage, including usage of personal devices and email systems for official duties or to conduct HHS business. Therefore, you have no reasonable expectation of privacy regarding any communication or data transiting or stored on this system. At any time, and for any lawful Government purpose, the government may monitor, intercept, and search and seize any communication or data transiting or stored on this system.
+Any communication or data transiting or stored on this system may be disclosed or used for any lawful Government purpose.
             The algorithms and software provided on this site are
             intended for research purposes only.  This system has
             not been reviewed and approved by the Food and Drug
@@ -113,25 +121,66 @@
 
 
         <v-flex xs12 class="text-xs-center">
-          <img src="../assets/FNLCR-logo.png">
-          <img src="../assets/nci-oncogenomics-logo.png">
+          <v-img class="mx-auto" width=600px :src="require('../assets/FNLCR-logo.png').default" />
+          <v-img class="mx-auto" width=600px :src="require('../assets/nci-oncogenomics-logo.png').default" />
         </v-flex>
           <v-flex xs12>
-<!--
+            <v-card>
+              <v-card-title class="headline grey lighten-2">
+                Research Use Policy
+              </v-card-title>
+  
+          <v-card-text>
+            <ul>
+              <li>
+                This warning banner provides privacy and security notices consistent with applicable federal laws, directives, and other federal guidance for accessing this Government system, which includes (1) this computer network, (2) all computers connected to this network, and (3) all devices and storage media attached to this network or to a computer on this network.
+              </li>
+              <li>
+                This system is provided for Government-authorized use only.
+              </li>
+              <li>
+                Unauthorized or improper use of this system is prohibited and may result in disciplinary action and/or civil and criminal penalties.
+              </li>
+              <li>
+                Personal use of social media and networking sites on this system is limited as to not interfere with official work duties and is subject to monitoring.
+              </li>
+              <li>
+                By using this system, you understand and consent to the following:
+                <ul>
+                  <li>
+                    The Government may monitor, record, and audit your system usage, including usage of personal devices and email systems for official duties or to conduct HHS business. Therefore, you have no reasonable expectation of privacy regarding any communication or data transiting or stored on this system. At any time, and for any lawful Government purpose, the government may monitor, intercept, and search and seize any communication or data transiting or stored on this system.
+                  </li>
+                  <li>
+                    Any communication or data transiting or stored on this system may be disclosed or used for any lawful Government purpose.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                The algorithms and software provided on this site are
+                intended for research purposes only.  This system has
+                not been reviewed and approved by the Food and Drug
+                Administration or any other US Federal agency for use
+                in clinical applications.  The contained models are trained only on 
+                Rhabdomyosarcoma tissue.  Testing images from any other disease
+                is not supported and will not yield reliable results. 
+              </li>
+            </ul>
+          </v-card-text>
+        </v-card>
           <v-btn
               block
-              @click="cilogonButton"
+              :href="ITrustEndpoint"
             >
             {{ cilogonText }}
             </v-btn>
--->
+<!--
           <v-btn
               block
               @click="loginButton"
             >
             {{ loginText }}
             </v-btn>
-
+-->
           <v-btn
               block
               @click="logout"
@@ -140,7 +189,7 @@
             </v-btn>
           </v-flex>
 
-        <v-flex xs12>
+        <v-flex xs12 v-if="loggedIn">
           <span class="title">Applications</span>
         </v-flex>
 
@@ -208,30 +257,31 @@ export default {
     token: '',
     user: '',
     ADURL: '',
-    cilogonText: 'Login with Google Account here',
+    cilogonText: 'Sign in',
+    ITrustEndpoint: '',
     loginText: 'Please login here',
     samples: [
       {   
        label: 'Instructions',
-       image: require('../assets/instructions.png'),
+       image: require('../assets/instructions.png').default,
        route: 'instructions',
        description: 'Quick start instructions on using this RMS application'
       },
       {   
        label: 'Whole Slide RMS Segmentation',
-       image: require('../assets/RMS-WSI-segmentation.png'),
+       image: require('../assets/RMS-WSI-segmentation.png').default,
        route: 'infer_wsi',
        description: 'Segment an entire H&E-stained Rhabdomyosarcoma WSI by uploading the slide for processing',
       },    
       {   
        label: 'MyoD1 Positive/Negative',
-       image: require('../assets/myod1.png'),
+       image: require('../assets/myod1.png').default,
        route: 'myod1',
        description: 'Predict MYOD1 Positive/Negative from an H&E WSI',
       },   
       {   
        label: 'Survivability',
-       image: require('../assets/survivability.png'),
+       image: require('../assets/survivability.png').default,
        route: 'survivability',
        description: 'Predict survivability from an H&E WSI',
       },   
@@ -240,6 +290,14 @@ export default {
 
 // start with a 'research use only' dialog the first time 
 // the page is rendered
+
+mounted () {
+  // 
+  const resp = this.girderRest.get('/nciLogin/endpoint')
+  if (resp.data) {
+      this.ITrustEndpoint = resp.data
+  }
+},
 
 created () {
   // ** test here they are not logged in.  If logged in, don't 
@@ -256,9 +314,15 @@ created () {
 // this is used to control the rendering of the apps and anything
 // else that isn't visible until the user has logged in
 computed: {
- loggedIn() {
-   return true
- },
+  loggedIn() {
+    // check login user or not
+    const resp = this.girderRest.get('user/me')
+    if (resp.data) {
+      this.username = resp.data.login
+      return true
+    }
+    return false
+  },
 
  loggedIn_real() {
       if (this.username == null) {
@@ -308,7 +372,7 @@ autoLogin() {
  
   },
 
-cilogonButton() {
+iTrustLogin() {
   console.log("open CILogon dialog to login the user");
   this.loginGoogleDialog = true
   },

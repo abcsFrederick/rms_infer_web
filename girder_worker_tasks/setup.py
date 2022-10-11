@@ -19,15 +19,7 @@ setup(name='arbor_nova_tasks',
           ]
       },
       install_requires=[
-          'girder_worker',
-          'torch',
-          'opencv-python',
-          'large_image[openslide]',
-          'albumentations',
-          'segmentation-models-pytorch',
-          'torchnet',
-          'openslide-python',
-          'pandas'
+          'girder_worker'
       ],
       packages=['arbor_nova_tasks'],
       zip_safe=False)
