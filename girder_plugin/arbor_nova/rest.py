@@ -284,7 +284,7 @@ class ArborNova(Resource):
                                      handler='slurm_handler', user=user)
 
         jobToken = Job().createJobToken(job)
-        inputFile = File().load(imageId, user=user)
+        inputFile = File().load(imageId, level=AccessType.READ, user=user)
         # Use slurm util to setup task json schema
         inputs = {
             'input': slurmGirderInput.girderInputSpec(
@@ -358,8 +358,8 @@ class ArborNova(Resource):
                                      handler='slurm_handler', user=user)
 
         jobToken = Job().createJobToken(job)
-        inputFile = File().load(imageId, user=user)
-        sefFile = File().load(segmentId, user=user)
+        inputFile = File().load(imageId, level=AccessType.READ, user=user)
+        sefFile = File().load(segmentId, level=AccessType.READ, user=user)
         # Use slurm util to setup task json schema
         inputs = {
             'input': slurmGirderInput.girderInputSpec(
@@ -432,8 +432,8 @@ class ArborNova(Resource):
                                      handler='slurm_handler', user=user)
 
         jobToken = Job().createJobToken(job)
-        inputFile = File().load(imageId, user=user)
-        sefFile = File().load(segmentId, user=user)
+        inputFile = File().load(imageId, level=AccessType.READ, user=user)
+        sefFile = File().load(segmentId, level=AccessType.READ, user=user)
         # Use slurm util to setup task json schema
         inputs = {
             'input': slurmGirderInput.girderInputSpec(

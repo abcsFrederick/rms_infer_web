@@ -41,8 +41,8 @@ Any communication or data transiting or stored on this system may be disclosed o
             <v-btn
               color="primary"
               text
-              @click="autoLogin"
-            >
+              @click="acceptPolicy"
+            ><!-- @click="autoLogin"-->
               I accept
             </v-btn>
           </v-card-actions>
@@ -230,9 +230,10 @@ Any communication or data transiting or stored on this system may be disclosed o
 
 <script>
 
-import { utils } from '@girder/components/src';
 import optionsToParameters from '../optionsToParameters';
-import { Authentication as GirderAuth } from "@girder/components/src/components";
+import { Authentication  as GirderAuth } from "@girder/components/src/components";
+import Cookies from 'js-cookie'
+
 
 components: {
     GirderAuth
@@ -255,6 +256,7 @@ export default {
     attemptedGoogleUserName: '',
     attemptedGoogleUserPassword: '',
     token: '',
+    headers: {['Girder-Token']: null},
     user: '',
     ADURL: '',
     cilogonText: 'Sign in',
@@ -313,54 +315,42 @@ created () {
 
 // this is used to control the rendering of the apps and anything
 // else that isn't visible until the user has logged in
-computed: {
-  loggedIn() {
-    // check login user or not
-    const resp = this.girderRest.get('user/me')
-    if (resp.data) {
-      this.username = resp.data.login
-      return true
-    }
-    return false
-  },
-
- loggedIn_real() {
-      if (this.username == null) {
-        return false
-      } else {
-        return this.username.length>0
-      }
-    },
-},
-
 
 asyncComputed: {
-  getURL() {
-
-    // commented out since we aren't using CiLogin
-
-    // let test = async (girderRest) => {
-    //     // AD plugin API to fetch CI information/ returned URL(normally main app url) 
-    //     // from your configuration(girder configure page.) after you set them.
-    //     let inner = (await girderRest.get('/nciLogin/loginCallback', {})).data
-    //     return inner;
-    //   }
-    //   test(this.girderRest).then(res => {
-    //     // URL to CILogin page
-    //     this.ADURL = res;
-    //   })
+  async loggedIn() {
+    const tokenResp = await this.girderRest.get('nciLogin/cors', {withCredentials: true})
+    if (tokenResp.status == 200) {
+      this.token = tokenResp.data
+      document.cookie = 'girderToken=' + this.token;
+      this.headers['Girder-Token'] = this.token;
+    }
+    const headers = this.headers;
+    const resp = await this.girderRest.get('user/me', {headers});
+    if (resp.status == 200 && resp.data) {
+      this.cilogonText = resp.data.firstName + ' ' + resp.data.lastName
+      this.dialog = false;
+      localStorage.setItem('inferenceUser',this.cilogonText)
+      this.girderRest.token = this.token;
+      return true
+    }
+    return false   
   }
 },
 
 methods: {
 
+acceptPolicy() {
+  // close the announcement 
+  this.dialog = false
+},
+
 autoLogin() {
   // close the announcement 
   this.dialog = false
-  this.attemptedUserName = 'anonymous'
-  this.attemptedUserPassword = 'letmein'
-  // automatically log into girder so the apps are available
-  this.loginFromGirderComponents( this.attemptedUserName,this.attemptedUserPassword)
+  // this.attemptedUserName = 'anonymous'
+  // this.attemptedUserPassword = 'letmein'
+  // // automatically log into girder so the apps are available
+  // this.loginFromGirderComponents( this.attemptedUserName,this.attemptedUserPassword)
   },
 
  // when the user clicks the button to login, open the login dialog
@@ -434,16 +424,26 @@ async loginFromGirderComponents(username, password, otp = null) {
 
 
   async logout() {
-      if (!this.username) {
-        return;
-      } else {
-        this.token = null;
-        this.user = null;
-        this.username = null;
-        // remove from local storage so session is over in all pages
-        localStorage.removeItem('inferenceUser')
-        this.loginText = 'Please login here'
-      }
+    const headers = this.headers;
+    const resp = await this.girderRest.delete('user/authentication', {headers});
+    if (resp.status === 200) {
+      this.token = null;
+      this.user = null;
+      Cookies.remove('girderToken');
+      localStorage.removeItem('inferenceUser');
+      window.location.reload()
+    }
+
+      // if (!this.username) {
+      //   return;
+      // } else {
+      //   this.token = null;
+      //   this.user = null;
+      //   this.username = null;
+      //   // remove from local storage so session is over in all pages
+      //   localStorage.removeItem('inferenceUser')
+      //   this.loginText = 'Please login here'
+      // }
     }
 
  }  // end methods
