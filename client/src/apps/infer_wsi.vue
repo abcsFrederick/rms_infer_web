@@ -237,7 +237,7 @@ export default {
     async renderInputImage() {
        if (this.inputDisplayed == false) {
          this.thumbnailInProgress = true
-
+         console.log(this.scratchFolder)
         // create a spot in Girder for the output of the REST call to be placed
           const outputItem = (await this.girderRest.post(
             `item?folderId=${this.scratchFolder._id}&name=thumbnail`,

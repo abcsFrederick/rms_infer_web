@@ -5,7 +5,6 @@ import { API_URL, STATIC_PATH } from "../constants";
 
 // Install the Vue plugin that lets us use the components
 Vue.use(Girder);
-
 // Create the axios-based client to be used for all API requests
 const girderRest = new RestClient({apiRoot: API_URL});
 
