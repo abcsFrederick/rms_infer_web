@@ -6,49 +6,6 @@
     >
       <v-layout row wrap>
 
- <v-dialog
-        v-model="dialog"
-        width="500"
-        persistent
-      >  
-        <v-card>
-          <v-card-title class="headline grey lighten-2">
-            Research Use Policy
-          </v-card-title>
-  
-          <v-card-text>
-            <h>Please Sign In</h>
-            This warning banner provides privacy and security notices consistent with applicable federal laws, directives, and other federal guidance for accessing this Government system, which includes (1) this computer network, (2) all computers connected to this network, and (3) all devices and storage media attached to this network or to a computer on this network.
-This system is provided for Government-authorized use only.
-Unauthorized or improper use of this system is prohibited and may result in disciplinary action and/or civil and criminal penalties.
-Personal use of social media and networking sites on this system is limited as to not interfere with official work duties and is subject to monitoring.
-By using this system, you understand and consent to the following:
-The Government may monitor, record, and audit your system usage, including usage of personal devices and email systems for official duties or to conduct HHS business. Therefore, you have no reasonable expectation of privacy regarding any communication or data transiting or stored on this system. At any time, and for any lawful Government purpose, the government may monitor, intercept, and search and seize any communication or data transiting or stored on this system.
-Any communication or data transiting or stored on this system may be disclosed or used for any lawful Government purpose.
-            The algorithms and software provided on this site are
-            intended for research purposes only.  This system has
-            not been reviewed and approved by the Food and Drug
-            Administration or any other US Federal agency for use
-            in clinical applications.  The contained models are trained only on 
-            Rhabdomyosarcoma tissue.  Testing images from any other disease
-            is not supported and will not yield reliable results. 
-          </v-card-text>
-  
-          <v-divider></v-divider>
-  
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="primary"
-              text
-              @click="acceptPolicy"
-            ><!-- @click="autoLogin"-->
-              I accept
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
 
       <v-dialog
         v-model="loginGoogleDialog"
